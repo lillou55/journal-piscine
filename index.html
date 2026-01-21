@@ -66,6 +66,19 @@
     .chartBox { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
     canvas { width: 100%; height: 220px; display:block; }
     .small { font-size: 12px; opacity:.85; }
+  
+  /* ✅ Fix iOS : input date qui déborde */
+.grid > div { min-width: 0; }           /* autorise le shrink dans CSS grid */
+input[type="date"] { min-width: 0; }    /* évite le min-width implicite iOS */
+input, select, button { max-width: 100%; }
+
+/* sécurité anti-overflow */
+body { overflow-x: hidden; }
+
+input[type="date"]{
+  -webkit-appearance: none;
+  appearance: none;
+}
   </style>
 </head>
 
