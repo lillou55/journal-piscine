@@ -1,11 +1,350 @@
 <!doctype html>
-<html>
+<html lang="fr">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Journal Piscine</title>
+
+  <!-- PWA / iPhone -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background: #0b1220; color: #e6eefc; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0 0 14px; font-size: 22px; }
+    .card { background: #121b2e; border: 1px solid #233055; border-radius: 14px; padding: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .col-12{ grid-column: span 12; }
+    .col-6{ grid-column: span 6; }
+    @media (max-width: 760px){ .col-6{ grid-column: span 12; } }
+    label { display:block; font-size: 12px; opacity: .9; margin-bottom: 6px; }
+    input, button, select {
+      width: 100%; box-sizing: border-box;
+      background: #0c1427; color: #e6eefc;
+      border: 1px solid #26365f; border-radius: 12px;
+      padding: 12px; outline: none;
+    }
+    input:focus, select:focus { border-color: #4f7cff; }
+    .row { display:flex; gap: 10px; flex-wrap: wrap; }
+    button { cursor: pointer; font-weight: 650; }
+    .btn { background: #4f7cff; border-color: #4f7cff; }
+    .btn2 { background: #162243; }
+    .danger { background: #ff4f6a; border-color: #ff4f6a; }
+    .kpis { display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    .kpi { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
+    .kpi .t { font-size: 12px; opacity: .85; }
+    .kpi .v { font-size: 18px; font-weight: 750; margin-top: 4px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; overflow: hidden; border-radius: 12px; }
+    th, td { padding: 10px; border-bottom: 1px solid #243356; text-align: left; font-size: 13px; }
+    th { font-size: 12px; opacity: .9; background: #0c1427; }
+    .right { text-align:right; }
+    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background: #0c1427; border:1px solid #26365f; font-size: 12px; }
+    .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .error { color: #ffb4bf; margin-top: 8px; }
+    .success { color: #b7ffd2; margin-top: 8px; }
+  </style>
 </head>
 <body>
-  <h1>🏊 Journal Piscine</h1>
-  <p>Mon application piscine fonctionne !</p>
+  <div class="wrap">
+    <h1>🏊 Journal Piscine</h1>
+
+    <div class="card">
+      <div class="grid">
+        <div class="col-6">
+          <label for="date">Date</label>
+          <input id="date" type="date" />
+        </div>
+
+        <div class="col-6">
+          <label for="poolLen">Taille d’une longueur (mètres)</label>
+          <input id="poolLen" type="number" min="1" step="1" placeholder="25" />
+        </div>
+
+        <div class="col-6">
+          <label for="laps">Nombre de longueurs</label>
+          <input id="laps" type="number" min="0" step="1" placeholder="40" />
+        </div>
+
+        <div class="col-6">
+          <label for="minutes">Temps de session (minutes)</label>
+          <input id="minutes" type="number" min="0" step="0.1" placeholder="45" />
+        </div>
+
+        <div class="col-12">
+          <label for="note">Note (optionnel)</label>
+          <input id="note" type="text" placeholder="Ex: éducatifs, pull buoy, sensations..." />
+        </div>
+
+        <div class="col-12 row">
+          <button class="btn" id="addBtn">Ajouter la session</button>
+          <button class="btn2" id="exportBtn" type="button">Exporter JSON</button>
+          <button class="btn2" id="importBtn" type="button">Importer JSON</button>
+          <button class="danger" id="wipeBtn" type="button">Tout effacer</button>
+        </div>
+
+        <div class="col-12">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="t">Distance</div>
+              <div class="v" id="kDistance">—</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Allure</div>
+              <div class="v" id="kPace">—</div>
+              <div style="opacity:.8;font-size:12px">min / 100 m</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Vitesse</div>
+              <div class="v" id="kSpeed">—</div>
+              <div style="opacity:.8;font-size:12px">km/h</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Cadence</div>
+              <div class="v" id="kRate">—</div>
+              <div style="opacity:.8;font-size:12px">m/min</div>
+            </div>
+          </div>
+          <div class="error" id="msg"></div>
+          <div class="success" id="msgOk"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px;">
+      <div class="inline">
+        <div class="pill" id="countPill">0 session</div>
+        <div class="pill" id="sumPill">Total: 0 m</div>
+        <div style="flex:1"></div>
+        <select id="sort">
+          <option value="date_desc">Trier: date (récent → ancien)</option>
+          <option value="date_asc">Trier: date (ancien → récent)</option>
+          <option value="dist_desc">Trier: distance (↓)</option>
+          <option value="time_desc">Trier: temps (↓)</option>
+        </select>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Détails</th>
+            <th class="right">Distance</th>
+            <th class="right">Temps</th>
+            <th class="right">Allure</th>
+            <th class="right">Action</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+  // Service worker (offline) — iOS OK si site en https
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+  }
+
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = "swim_sessions_v1";
+
+  function todayISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function load(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } }
+  function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+  function meters(laps, poolLen){ return (Number(laps) || 0) * (Number(poolLen) || 0); }
+
+  function paceMinPer100m(totalMeters, minutes){
+    const m = Number(totalMeters), t = Number(minutes);
+    if (m <= 0 || t <= 0) return null;
+    return t / (m / 100);
+  }
+
+  function formatPace(minPer100){
+    if (minPer100 == null) return "—";
+    const totalSeconds = Math.round(minPer100 * 60);
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = String(totalSeconds % 60).padStart(2,"0");
+    return `${mm}:${ss}`;
+  }
+
+  function speedKmh(totalMeters, minutes){
+    const m = Number(totalMeters), t = Number(minutes);
+    if (m <= 0 || t <= 0) return null;
+    return (m/1000) / (t/60);
+  }
+
+  function rateMPerMin(totalMeters, minutes){
+    const m = Number(totalMeters), t = Number(minutes);
+    if (m <= 0 || t <= 0) return null;
+    return m / t;
+  }
+
+  function setMsg(err="", ok=""){ $("msg").textContent = err; $("msgOk").textContent = ok; }
+
+  function computeLiveKpis(){
+    const poolLen = Number($("poolLen").value);
+    const laps = Number($("laps").value);
+    const mins = Number($("minutes").value);
+    const dist = meters(laps, poolLen);
+
+    $("kDistance").textContent = dist > 0 ? `${dist} m` : "—";
+    $("kPace").textContent = formatPace(paceMinPer100m(dist, mins));
+
+    const sp = speedKmh(dist, mins);
+    $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
+
+    const r = rateMPerMin(dist, mins);
+    $("kRate").textContent = r == null ? "—" : r.toFixed(1);
+  }
+
+  function sortSessions(data){
+    const mode = $("sort").value;
+    const copy = [...data];
+    copy.sort((a,b) => {
+      if (mode === "date_desc") return (b.date||"").localeCompare(a.date||"");
+      if (mode === "date_asc") return (a.date||"").localeCompare(b.date||"");
+      if (mode === "dist_desc") return (b.totalMeters||0) - (a.totalMeters||0);
+      if (mode === "time_desc") return (b.minutes||0) - (a.minutes||0);
+      return 0;
+    });
+    return copy;
+  }
+
+  function render(){
+    const data = load();
+    const sorted = sortSessions(data);
+    const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
+
+    $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
+    $("sumPill").textContent = `Total: ${total} m`;
+
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+
+    for (const s of sorted){
+      const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
+      const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${s.date || "—"}</td>
+        <td>${details}</td>
+        <td class="right">${s.totalMeters} m</td>
+        <td class="right">${s.minutes} min</td>
+        <td class="right">${pace}</td>
+        <td class="right"></td>
+      `;
+
+      const btn = document.createElement("button");
+      btn.textContent = "Supprimer";
+      btn.className = "btn2";
+      btn.style.width = "auto";
+      btn.onclick = () => { save(load().filter(x => x.id !== s.id)); render(); };
+      tr.lastElementChild.appendChild(btn);
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  function uuid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+
+  function addSession(){
+    setMsg("", "");
+    const date = $("date").value || todayISO();
+    const poolLen = Number($("poolLen").value);
+    const laps = Number($("laps").value);
+    const minutes = Number($("minutes").value);
+    const note = ($("note").value || "").trim();
+
+    if (!poolLen || poolLen <= 0) return setMsg("👉 Indique la taille d’une longueur (en mètres).");
+    if (!Number.isFinite(laps) || laps < 0) return setMsg("👉 Le nombre de longueurs doit être ≥ 0.");
+    if (!minutes || minutes <= 0) return setMsg("👉 Indique le temps de session (en minutes).");
+
+    const totalMeters = meters(laps, poolLen);
+    const session = { id: uuid(), date, poolLen, laps, minutes, totalMeters, note };
+
+    const data = load();
+    data.push(session);
+    save(data);
+
+    setMsg("", "✅ Session ajoutée !");
+    render();
+  }
+
+  function exportJSON(){
+    const data = load();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sessions_piscine.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importJSON(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json";
+    inp.onchange = async () => {
+      const file = inp.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) throw new Error("Format invalide (tableau attendu).");
+        const clean = parsed.map(x => ({
+          id: x.id || uuid(),
+          date: x.date || "",
+          poolLen: Number(x.poolLen) || 0,
+          laps: Number(x.laps) || 0,
+          minutes: Number(x.minutes) || 0,
+          totalMeters: Number(x.totalMeters) || meters(Number(x.laps)||0, Number(x.poolLen)||0),
+          note: (x.note || "").toString()
+        })).filter(x => x.poolLen > 0 && x.minutes > 0);
+        save(clean);
+        render();
+        setMsg("", "✅ Import effectué !");
+      } catch (e){
+        setMsg("❌ Import impossible : " + (e?.message || e));
+      }
+    };
+    inp.click();
+  }
+
+  function wipeAll(){
+    if (!confirm("Tout effacer ? (irréversible)")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    render();
+    setMsg("", "✅ Historique effacé.");
+  }
+
+  // Init
+  $("date").value = todayISO();
+  $("poolLen").value = 25;
+
+  ["poolLen","laps","minutes"].forEach(id => $(id).addEventListener("input", computeLiveKpis));
+  $("sort").addEventListener("change", render);
+
+  $("addBtn").addEventListener("click", addSession);
+  $("exportBtn").addEventListener("click", exportJSON);
+  $("importBtn").addEventListener("click", importJSON);
+  $("wipeBtn").addEventListener("click", wipeAll);
+
+  computeLiveKpis();
+  render();
+</script>
 </body>
 </html>
