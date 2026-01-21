@@ -16,30 +16,34 @@
     body { margin: 0; background: #0b1220; color: #e6eefc; }
     .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
     h1 { margin: 0 0 14px; font-size: 22px; }
-    .card { background: #121b2e; border: 1px solid #233055; border-radius: 14px; padding: 16px; }
+    .card { background: #121b2e; border: 1px solid #233055; border-radius: 14px; padding: 16px; margin-top: 14px; }
+
     .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
     .col-12{ grid-column: span 12; }
     .col-6{ grid-column: span 6; }
-    .col-4{ grid-column: span 4; }
-    .col-3{ grid-column: span 3; }
     @media (max-width: 760px){
-      .col-6,.col-4,.col-3{ grid-column: span 12; }
+      .col-6{ grid-column: span 12; }
       .wrap{ padding: 14px; }
     }
+
     label { display:block; font-size: 12px; opacity: .9; margin-bottom: 6px; }
-    input, button, select, textarea {
+    input, button, select {
       width: 100%; box-sizing: border-box;
       background: #0c1427; color: #e6eefc;
       border: 1px solid #26365f; border-radius: 12px;
       padding: 12px; outline: none;
     }
-    input:focus, select:focus, textarea:focus { border-color: #4f7cff; }
-    .row { display:flex; gap: 10px; flex-wrap: wrap; }
+    input:focus, select:focus { border-color: #4f7cff; }
     button { cursor: pointer; font-weight: 650; }
+    .row { display:flex; gap: 10px; flex-wrap: wrap; }
     .btn { background: #4f7cff; border-color: #4f7cff; }
     .btn2 { background: #162243; }
     .danger { background: #ff4f6a; border-color: #ff4f6a; }
-    .ghost { background: transparent; border-color: #26365f; }
+
+    .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background: #0c1427; border:1px solid #26365f; font-size: 12px; }
+    .muted { opacity:.8; }
+
     .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
     @media (max-width: 760px){ .kpis { grid-template-columns: repeat(2, 1fr);} }
     .kpi { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
@@ -47,20 +51,16 @@
     .kpi .v { font-size: 18px; font-weight: 750; margin-top: 4px; }
     .kpi .s { font-size: 12px; opacity:.8; margin-top: 4px; }
 
-    /* ✅ Table responsive (moins large) */
+    .error { color: #ffb4bf; margin-top: 8px; }
+    .success { color: #b7ffd2; margin-top: 8px; }
+
+    /* ✅ Tables responsive (plus “trop large”) */
     .tablewrap { overflow-x: auto; border-radius: 12px; border: 1px solid #26365f; }
     table { width: 100%; border-collapse: collapse; min-width: 680px; }
     th, td { padding: 10px; border-bottom: 1px solid #243356; text-align: left; font-size: 13px; white-space: nowrap; }
     th { font-size: 12px; opacity: .9; background: #0c1427; position: sticky; top: 0; }
     tr:hover td { background: rgba(79,124,255,.06); }
     .right { text-align:right; }
-    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background: #0c1427; border:1px solid #26365f; font-size: 12px; }
-    .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .error { color: #ffb4bf; margin-top: 8px; }
-    .success { color: #b7ffd2; margin-top: 8px; }
-    .muted { opacity:.8; }
-    details summary { cursor:pointer; user-select:none; }
-    .chiprow { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
 
     /* Charts */
     .chartBox { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
@@ -72,6 +72,9 @@
 <body>
   <div class="wrap">
     <h1>🏊 Journal Piscine</h1>
+
+    <!-- ✅ Badge version pour vérifier que tu as bien le dernier index.html -->
+    <div class="pill" style="margin-bottom:10px;">Version: INDEX-v8</div>
 
     <!-- FORM + HISTO KPIS -->
     <div class="card">
@@ -101,7 +104,6 @@
           <input id="note" type="text" placeholder="Ex: éducatifs, pull buoy, sensations..." />
         </div>
 
-        <!-- kcal inputs -->
         <div class="col-6">
           <label for="weightKg">Poids (kg) pour kcal</label>
           <input id="weightKg" type="number" min="30" max="250" step="0.1" placeholder="70" />
@@ -131,7 +133,7 @@
             <div class="pill">📊 Stats de l’historique</div>
             <div class="pill muted" id="activeKeyPill">storage: —</div>
             <div style="flex:1"></div>
-            <div class="muted" style="font-size:12px;">(allure/vitesse/cadence pondérées par la distance)</div>
+            <div class="muted" style="font-size:12px;">(pondérées par la distance)</div>
           </div>
 
           <div class="kpis">
@@ -166,7 +168,7 @@
             <div class="kpi">
               <div class="t">kcal estimées (total)</div>
               <div class="v" id="kKcal">—</div>
-              <div class="s small" id="kKcalHint">Basé sur MET × poids × durée</div>
+              <div class="s small">MET × poids × durée</div>
             </div>
             <div class="kpi">
               <div class="t">Record distance</div>
@@ -186,7 +188,7 @@
       </div>
     </div>
 
-    <!-- GRAPHIQUES + STATS MENSUELLES -->
+    <!-- GRAPH + MONTHLY -->
     <div class="card">
       <div class="inline">
         <div class="pill">📈 Graphiques & stats mensuelles</div>
@@ -240,7 +242,7 @@
       </div>
     </div>
 
-    <!-- LISTE DES SESSIONS -->
+    <!-- SESSIONS -->
     <div class="card">
       <div class="inline">
         <div class="pill" id="countPill">0 session</div>
@@ -281,7 +283,7 @@
 <script>
   const $ = (id) => document.getElementById(id);
 
-  // ✅ on supporte plusieurs clés au cas où ton app a changé dans le temps
+  // ✅ support migration / anciennes versions
   const STORAGE_KEYS = ["swim_sessions_v1", "swim_sessions", "sessions_piscine"];
   let ACTIVE_KEY = null;
 
@@ -357,7 +359,6 @@
     const laps = Number(x.laps) || 0;
     const minutes = Number(x.minutes) || 0;
 
-    // recalcul distance si absente ou invalide
     const tm = Number(x.totalMeters);
     const totalMeters = (Number.isFinite(tm) && tm > 0) ? tm : meters(laps, poolLen);
 
@@ -377,7 +378,8 @@
       const raw = localStorage.getItem(ACTIVE_KEY) || "[]";
       const arr = JSON.parse(raw);
       if (!Array.isArray(arr)) return [];
-      return arr.map(normalizeSession).filter(s => s.poolLen > 0 && s.minutes > 0);
+      // On garde même les “vieux” enregistrements, on les normalise
+      return arr.map(normalizeSession);
     } catch {
       return [];
     }
@@ -406,7 +408,7 @@
     const totalMeters = meters(laps, poolLen);
     const session = { id: uuid(), date, poolLen, laps, minutes, totalMeters, note };
 
-    const data = load();
+    const data = load().filter(s => s.poolLen > 0 && s.minutes > 0); // nettoie éventuels vieux invalides
     data.push(session);
     save(data);
 
@@ -447,7 +449,7 @@
         const clean = parsed
           .filter(x => x && typeof x === "object")
           .map(normalizeSession)
-          .filter(x => x.poolLen > 0 && x.minutes > 0);
+          .filter(s => s.poolLen > 0 && s.minutes > 0);
 
         save(clean);
         renderAll();
@@ -469,7 +471,7 @@
   // ---- Sort + render sessions
   function sortSessions(data){
     const mode = $("sort").value;
-    const copy = [...data];
+    const copy = [...data].filter(s => s.poolLen > 0 && s.minutes > 0);
     copy.sort((a,b) => {
       if (mode === "date_desc") return (b.date||"").localeCompare(a.date||"");
       if (mode === "date_asc") return (a.date||"").localeCompare(b.date||"");
@@ -481,7 +483,7 @@
         if (pa == null && pb == null) return 0;
         if (pa == null) return 1;
         if (pb == null) return -1;
-        return pa - pb; // smaller = faster
+        return pa - pb;
       }
       return 0;
     });
@@ -489,7 +491,7 @@
   }
 
   function renderSessions(){
-    const data = load();
+    const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
     const sorted = sortSessions(data);
 
     const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
@@ -524,17 +526,17 @@
         renderAll();
       };
       tr.lastElementChild.appendChild(btn);
+
       tbody.appendChild(tr);
     }
   }
 
   // ---- History KPIs + records
   function computeHistoryKpisAndRecords(){
-    // ✅ important: on normalise et on resauve, comme ça les vieux enregistrements deviennent compatibles
-    const raw = load();
-    save(raw);
+    // Normalise + resauvegarde pour rendre l’historique compatible
+    const data = load().map(normalizeSession).filter(s => s.poolLen > 0 && s.minutes > 0);
+    save(data);
 
-    const data = raw;
     const totalMeters = data.reduce((s,x)=>s+(Number(x.totalMeters)||0),0);
     const totalMinutes = data.reduce((s,x)=>s+(Number(x.minutes)||0),0);
 
@@ -554,11 +556,9 @@
     $("kKcal").textContent = data.length ? `${totalKcal.toFixed(0)}` : "—";
 
     const dates = data.map(x=>x.date).filter(Boolean).sort();
-    if (dates.length){
-      $("kPeriod").textContent = `Période: ${dates[0]} → ${dates[dates.length-1]} • ${data.length} sessions`;
-    } else {
-      $("kPeriod").textContent = "Ajoute une session pour voir les stats.";
-    }
+    $("kPeriod").textContent = dates.length
+      ? `Période: ${dates[0]} → ${dates[dates.length-1]} • ${data.length} sessions`
+      : "Ajoute une session pour voir les stats.";
 
     // Records
     if (!data.length){
@@ -592,13 +592,12 @@
 
   // ---- Monthly stats + charts
   function monthKey(iso){
-    // YYYY-MM-DD => YYYY-MM
     if (!iso || iso.length < 7) return "";
     return iso.slice(0,7);
   }
 
   function buildMonthlyStats(data){
-    const map = new Map(); // YYYY-MM -> agg
+    const map = new Map();
     for (const s of data){
       const mk = monthKey(s.date);
       if (!mk) continue;
@@ -612,8 +611,6 @@
       agg.totalMinutes += Number(s.minutes) || 0;
       agg.kcal += kcalFromMinutes(s.minutes);
     }
-
-    // sort asc by month
     return Array.from(map.values()).sort((a,b)=> (a.month||"").localeCompare(b.month||""));
   }
 
@@ -652,64 +649,60 @@
   }
 
   // Simple canvas charts (no external libs)
-  function drawBarChart(canvas, labels, values, opts={}){
+  function drawBarChart(canvas, labels, values){
     const ctx = canvas.getContext("2d");
-    const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
-    const H = canvas.height = 220 * (window.devicePixelRatio || 1);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    canvas.height = Math.max(1, Math.floor(220 * dpr));
 
+    const W = canvas.width, H = canvas.height;
     ctx.clearRect(0,0,W,H);
 
-    const pad = 24 * (window.devicePixelRatio || 1);
+    const pad = 24 * dpr;
     const innerW = W - pad*2;
     const innerH = H - pad*2;
-
-    // background
-    ctx.fillStyle = "rgba(255,255,255,0.00)";
-    ctx.fillRect(0,0,W,H);
 
     const maxV = Math.max(1, ...values);
     const n = Math.max(1, values.length);
     const gap = innerW * 0.02;
     const barW = Math.max(2, (innerW - gap*(n-1)) / n);
 
-    // axis
     ctx.strokeStyle = "rgba(230,238,252,0.15)";
-    ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+    ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(pad, pad + innerH);
     ctx.lineTo(pad + innerW, pad + innerH);
     ctx.stroke();
 
-    // bars
     for (let i=0;i<n;i++){
       const v = values[i] || 0;
       const h = (v / maxV) * innerH;
       const x = pad + i*(barW+gap);
       const y = pad + (innerH - h);
-
       ctx.fillStyle = "rgba(79,124,255,0.85)";
       ctx.fillRect(x, y, barW, h);
     }
 
-    // labels (sparse)
     ctx.fillStyle = "rgba(230,238,252,0.75)";
-    ctx.font = `${11 * (window.devicePixelRatio || 1)}px system-ui`;
+    ctx.font = `${11 * dpr}px system-ui`;
     const step = Math.ceil(n / 6);
     for (let i=0;i<n;i+=step){
       const text = labels[i] || "";
       const x = pad + i*(barW+gap);
-      ctx.fillText(text, x, pad + innerH + (18 * (window.devicePixelRatio || 1)));
+      ctx.fillText(text, x, pad + innerH + (18 * dpr));
     }
   }
 
   function drawLineChart(canvas, labels, values){
     const ctx = canvas.getContext("2d");
-    const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
-    const H = canvas.height = 220 * (window.devicePixelRatio || 1);
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+    canvas.height = Math.max(1, Math.floor(220 * dpr));
 
+    const W = canvas.width, H = canvas.height;
     ctx.clearRect(0,0,W,H);
 
-    const pad = 24 * (window.devicePixelRatio || 1);
+    const pad = 24 * dpr;
     const innerW = W - pad*2;
     const innerH = H - pad*2;
 
@@ -720,17 +713,15 @@
 
     const n = Math.max(1, values.length);
 
-    // axis
     ctx.strokeStyle = "rgba(230,238,252,0.15)";
-    ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+    ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(pad, pad + innerH);
     ctx.lineTo(pad + innerW, pad + innerH);
     ctx.stroke();
 
-    // line
     ctx.strokeStyle = "rgba(79,124,255,0.95)";
-    ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+    ctx.lineWidth = 2 * dpr;
     ctx.beginPath();
 
     let started = false;
@@ -740,51 +731,43 @@
       const x = pad + (i/(n-1 || 1)) * innerW;
       const norm = (v - minV) / ((maxV - minV) || 1);
       const y = pad + (1 - norm) * innerH;
-
-      if (!started){
-        ctx.moveTo(x,y);
-        started = true;
-      } else {
-        ctx.lineTo(x,y);
-      }
+      if (!started){ ctx.moveTo(x,y); started = true; }
+      else ctx.lineTo(x,y);
     }
     ctx.stroke();
 
-    // points
     for (let i=0;i<n;i++){
       const v = clean[i];
       if (v == null) continue;
       const x = pad + (i/(n-1 || 1)) * innerW;
       const norm = (v - minV) / ((maxV - minV) || 1);
       const y = pad + (1 - norm) * innerH;
-
       ctx.fillStyle = "rgba(79,124,255,1)";
       ctx.beginPath();
-      ctx.arc(x,y, 3 * (window.devicePixelRatio || 1), 0, Math.PI*2);
+      ctx.arc(x,y, 3*dpr, 0, Math.PI*2);
       ctx.fill();
     }
 
-    // labels sparse
     ctx.fillStyle = "rgba(230,238,252,0.75)";
-    ctx.font = `${11 * (window.devicePixelRatio || 1)}px system-ui`;
+    ctx.font = `${11 * dpr}px system-ui`;
     const step = Math.ceil(n / 6);
     for (let i=0;i<n;i+=step){
       const text = labels[i] || "";
       const x = pad + (i/(n-1 || 1)) * innerW;
-      ctx.fillText(text, x, pad + innerH + (18 * (window.devicePixelRatio || 1)));
+      ctx.fillText(text, x, pad + innerH + (18 * dpr));
     }
   }
 
   function renderMonthly(){
-    const data = load();
+    const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
     const allMonths = buildMonthlyStats(data);
     const months = filterRange(allMonths);
 
     renderMonthlyTable(months);
 
-    const labels = months.map(m => m.month.slice(5)); // "MM" for compact axis
+    const labels = months.map(m => m.month.slice(5)); // "MM"
     const km = months.map(m => +(m.totalMeters/1000).toFixed(2));
-    const paceVals = months.map(m => paceMinPer100m(m.totalMeters, m.totalMinutes)); // minutes/100m
+    const paceVals = months.map(m => paceMinPer100m(m.totalMeters, m.totalMinutes));
 
     drawBarChart($("chartMonthly"), labels, km);
     drawLineChart($("chartPace"), labels, paceVals);
@@ -802,7 +785,6 @@
   }
 
   function forceUpdate(){
-    // Re-détecte la clé active + recalcul tout + resauvegarde normalisé
     ACTIVE_KEY = findActiveKey();
     $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
     computeHistoryKpisAndRecords();
@@ -822,7 +804,7 @@
   ACTIVE_KEY = findActiveKey();
   $("date").value = todayISO();
   $("poolLen").value = 25;
-  $("weightKg").value = 78;
+  $("weightKg").value = 70;
 
   $("addBtn").addEventListener("click", addSession);
   $("forceBtn").addEventListener("click", forceUpdate);
@@ -834,21 +816,15 @@
   $("sort").addEventListener("change", renderSessions);
   $("chartRange").addEventListener("change", renderMonthly);
 
-  // Recalcul kcal + stats quand poids/intensité changent
   $("weightKg").addEventListener("input", renderAll);
   $("intensity").addEventListener("change", renderAll);
 
-  // ✅ premier rendu
   renderAll();
-
-  // ✅ re-dessine les canvas si rotation / resize
-  window.addEventListener("resize", () => {
-    renderMonthly();
-  });
+  window.addEventListener("resize", renderMonthly);
 </script>
 
 <script>
-  // ✅ Service Worker registration + auto update
+  // ✅ Service Worker registration + auto update (indispensable iOS PWA)
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", async () => {
       try {
@@ -873,11 +849,13 @@
           refreshing = true;
           window.location.reload();
         });
+
       } catch (e) {
         console.log("SW register failed", e);
       }
     });
   }
 </script>
+
 </body>
 </html>
