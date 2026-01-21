@@ -1,6 +1,7 @@
 /* sw.js */
-const CACHE_VERSION = "v8"; // ⬅️ incrémente à chaque déploiement
+const CACHE_VERSION = "v8"; // 🔁 incrémentable si besoin
 const CACHE_NAME = `journal-piscine-${CACHE_VERSION}`;
+const BUILD_ID = CACHE_VERSION; // pour debug
 
 const ASSETS = [
   "./",
@@ -9,48 +10,61 @@ const ASSETS = [
   "./sw.js"
 ];
 
+// INSTALL
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(ASSETS.map(u => new Request(u, { cache: "reload" })))
+    )
   );
   self.skipWaiting();
 });
 
+// ACTIVATE
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)));
+    await Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null));
     await self.clients.claim();
   })());
 });
 
+// DEBUG + COMMANDS
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
+  if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+
+  if (event.data?.type === "GET_VERSION") {
+    event.ports[0].postMessage({
+      build: BUILD_ID,
+      cache: CACHE_NAME,
+      assets: ASSETS
+    });
   }
 });
 
+// FETCH
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // ✅ Toujours tenter le réseau pour index.html / navigation (évite le “site figé”)
+  // 🟢 NAVIGATION / INDEX : NETWORK FIRST
   if (req.mode === "navigate" || url.pathname.endsWith("/index.html")) {
     event.respondWith((async () => {
       try {
         const fresh = await fetch(req, { cache: "no-store" });
         const cache = await caches.open(CACHE_NAME);
-        // ✅ clé stable (important iOS)
         cache.put("./index.html", fresh.clone());
         return fresh;
-      } catch (e) {
+      } catch {
         return (await caches.match("./index.html")) || (await caches.match("./"));
       }
     })());
     return;
   }
 
-  // ✅ Assets : cache-first, fallback réseau
+  // 🟡 ASSETS : CACHE FIRST
   event.respondWith((async () => {
     const cached = await caches.match(req);
     if (cached) return cached;
@@ -60,7 +74,7 @@ self.addEventListener("fetch", (event) => {
       const cache = await caches.open(CACHE_NAME);
       cache.put(req, fresh.clone());
       return fresh;
-    } catch (e) {
+    } catch {
       return cached;
     }
   })());
