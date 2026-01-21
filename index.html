@@ -6,7 +6,6 @@
   <title>Journal Piscine</title>
 
   <!-- PWA / iPhone -->
-  <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b1220">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -20,7 +19,10 @@
     .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
     .col-12{ grid-column: span 12; }
     .col-6{ grid-column: span 6; }
-    @media (max-width: 760px){ .col-6{ grid-column: span 12; } }
+    .col-4{ grid-column: span 4; }
+    @media (max-width: 760px){
+      .col-6,.col-4{ grid-column: span 12; }
+    }
     label { display:block; font-size: 12px; opacity: .9; margin-bottom: 6px; }
     input, button, select {
       width: 100%; box-sizing: border-box;
@@ -34,18 +36,24 @@
     .btn { background: #4f7cff; border-color: #4f7cff; }
     .btn2 { background: #162243; }
     .danger { background: #ff4f6a; border-color: #ff4f6a; }
-    .kpis { display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+    .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+    @media (max-width: 760px){ .kpis { grid-template-columns: repeat(2, 1fr);} }
     .kpi { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
     .kpi .t { font-size: 12px; opacity: .85; }
     .kpi .v { font-size: 18px; font-weight: 750; margin-top: 4px; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 10px; overflow: hidden; border-radius: 12px; }
     th, td { padding: 10px; border-bottom: 1px solid #243356; text-align: left; font-size: 13px; }
     th { font-size: 12px; opacity: .9; background: #0c1427; }
+    tr:hover td { background: rgba(79,124,255,.06); }
     .right { text-align:right; }
     .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background: #0c1427; border:1px solid #26365f; font-size: 12px; }
     .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .error { color: #ffb4bf; margin-top: 8px; }
     .success { color: #b7ffd2; margin-top: 8px; }
+    .muted { opacity:.8; }
+    details summary { cursor:pointer; user-select:none; }
+    .chiprow { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
   </style>
 </head>
 <body>
@@ -81,6 +89,7 @@
 
         <div class="col-12 row">
           <button class="btn" id="addBtn">Ajouter la session</button>
+          <button class="btn2" id="clearInputsBtn" type="button">Vider le formulaire</button>
           <button class="btn2" id="exportBtn" type="button">Exporter JSON</button>
           <button class="btn2" id="importBtn" type="button">Importer JSON</button>
           <button class="danger" id="wipeBtn" type="button">Tout effacer</button>
@@ -91,21 +100,22 @@
             <div class="kpi">
               <div class="t">Distance</div>
               <div class="v" id="kDistance">—</div>
+              <div class="muted" style="font-size:12px" id="kDistance2"></div>
             </div>
             <div class="kpi">
               <div class="t">Allure</div>
               <div class="v" id="kPace">—</div>
-              <div style="opacity:.8;font-size:12px">min / 100 m</div>
+              <div class="muted" style="font-size:12px">min / 100 m</div>
             </div>
             <div class="kpi">
               <div class="t">Vitesse</div>
               <div class="v" id="kSpeed">—</div>
-              <div style="opacity:.8;font-size:12px">km/h</div>
+              <div class="muted" style="font-size:12px">km/h</div>
             </div>
             <div class="kpi">
               <div class="t">Cadence</div>
               <div class="v" id="kRate">—</div>
-              <div style="opacity:.8;font-size:12px">m/min</div>
+              <div class="muted" style="font-size:12px">m/min</div>
             </div>
           </div>
           <div class="error" id="msg"></div>
@@ -114,6 +124,49 @@
       </div>
     </div>
 
+    <!-- STATS PAR SEMAINE -->
+    <div class="card" style="margin-top:14px;">
+      <div class="inline">
+        <div class="pill">📅 Stats par semaine</div>
+        <div style="flex:1"></div>
+        <select id="weekRange">
+          <option value="8">8 dernières semaines</option>
+          <option value="12">12 dernières semaines</option>
+          <option value="26">26 dernières semaines</option>
+          <option value="52">52 dernières semaines</option>
+          <option value="all">Tout</option>
+        </select>
+      </div>
+
+      <div class="chiprow">
+        <div class="pill" id="wTotal">Total: —</div>
+        <div class="pill" id="wBest">Meilleure semaine: —</div>
+        <div class="pill" id="wAvg">Moyenne/semaine: —</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Semaine</th>
+            <th class="right">Sessions</th>
+            <th class="right">Distance</th>
+            <th class="right">Temps</th>
+            <th class="right">Allure moy.</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyWeeks"></tbody>
+      </table>
+
+      <details style="margin-top:10px;">
+        <summary class="muted">Comprendre l’allure moyenne</summary>
+        <div class="muted" style="font-size:13px;margin-top:8px;line-height:1.4;">
+          L’allure moyenne est calculée <b>pondérée par la distance</b> :
+          (temps total de la semaine) / (distance totale), convertie en <b>min/100m</b>.
+        </div>
+      </details>
+    </div>
+
+    <!-- LISTE DES SESSIONS -->
     <div class="card" style="margin-top:14px;">
       <div class="inline">
         <div class="pill" id="countPill">0 session</div>
@@ -140,15 +193,14 @@
         </thead>
         <tbody id="tbody"></tbody>
       </table>
+
+      <div class="muted" style="margin-top:10px;font-size:12px;">
+        Données sauvegardées localement sur cet iPhone (localStorage). Utilise Export/Import si tu changes d’appareil.
+      </div>
     </div>
   </div>
 
 <script>
-  // Service worker (offline) — iOS OK si site en https
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(()=>{}));
-  }
-
   const $ = (id) => document.getElementById(id);
   const STORAGE_KEY = "swim_sessions_v1";
 
@@ -160,13 +212,19 @@
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  function load(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch { return []; } }
+  function load(){
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
+    catch { return []; }
+  }
   function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
-  function meters(laps, poolLen){ return (Number(laps) || 0) * (Number(poolLen) || 0); }
+  function meters(laps, poolLen){
+    return (Number(laps) || 0) * (Number(poolLen) || 0);
+  }
 
   function paceMinPer100m(totalMeters, minutes){
-    const m = Number(totalMeters), t = Number(minutes);
+    const m = Number(totalMeters);
+    const t = Number(minutes);
     if (m <= 0 || t <= 0) return null;
     return t / (m / 100);
   }
@@ -180,18 +238,23 @@
   }
 
   function speedKmh(totalMeters, minutes){
-    const m = Number(totalMeters), t = Number(minutes);
+    const m = Number(totalMeters);
+    const t = Number(minutes);
     if (m <= 0 || t <= 0) return null;
-    return (m/1000) / (t/60);
+    return (m / 1000) / (t / 60);
   }
 
   function rateMPerMin(totalMeters, minutes){
-    const m = Number(totalMeters), t = Number(minutes);
+    const m = Number(totalMeters);
+    const t = Number(minutes);
     if (m <= 0 || t <= 0) return null;
     return m / t;
   }
 
-  function setMsg(err="", ok=""){ $("msg").textContent = err; $("msgOk").textContent = ok; }
+  function setMsg(err="", ok=""){
+    $("msg").textContent = err;
+    $("msgOk").textContent = ok;
+  }
 
   function computeLiveKpis(){
     const poolLen = Number($("poolLen").value);
@@ -200,13 +263,45 @@
     const dist = meters(laps, poolLen);
 
     $("kDistance").textContent = dist > 0 ? `${dist} m` : "—";
-    $("kPace").textContent = formatPace(paceMinPer100m(dist, mins));
+    $("kDistance2").textContent = dist > 0 ? `${(dist/1000).toFixed(2)} km` : "";
+
+    const pace = paceMinPer100m(dist, mins);
+    $("kPace").textContent = formatPace(pace);
 
     const sp = speedKmh(dist, mins);
     $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
 
     const r = rateMPerMin(dist, mins);
     $("kRate").textContent = r == null ? "—" : r.toFixed(1);
+  }
+
+  // --- ISO WEEK helpers (semaine ISO : lundi->dimanche) ---
+  function parseISODate(iso){
+    // iso: YYYY-MM-DD
+    const [y,m,d] = (iso||"").split("-").map(Number);
+    if (!y || !m || !d) return null;
+    return new Date(y, m-1, d);
+  }
+
+  function getISOWeekInfo(date){
+    // returns {year, week, weekKey, weekStartISO}
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    // Thursday in current week decides the year.
+    const dayNum = d.getUTCDay() || 7; // 1..7 (Mon..Sun)
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+    // week start (Monday) for display
+    const d2 = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum2 = d2.getUTCDay() || 7;
+    d2.setUTCDate(d2.getUTCDate() - (dayNum2 - 1));
+    const ws = new Date(Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate()));
+    const weekStartISO = ws.toISOString().slice(0,10);
+
+    const year = d.getUTCFullYear();
+    const weekKey = `${year}-W${String(week).padStart(2,"0")}`;
+    return { year, week, weekKey, weekStartISO };
   }
 
   function sortSessions(data){
@@ -222,43 +317,9 @@
     return copy;
   }
 
-  function render(){
-    const data = load();
-    const sorted = sortSessions(data);
-    const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
-
-    $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
-    $("sumPill").textContent = `Total: ${total} m`;
-
-    const tbody = $("tbody");
-    tbody.innerHTML = "";
-
-    for (const s of sorted){
-      const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
-      const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${s.date || "—"}</td>
-        <td>${details}</td>
-        <td class="right">${s.totalMeters} m</td>
-        <td class="right">${s.minutes} min</td>
-        <td class="right">${pace}</td>
-        <td class="right"></td>
-      `;
-
-      const btn = document.createElement("button");
-      btn.textContent = "Supprimer";
-      btn.className = "btn2";
-      btn.style.width = "auto";
-      btn.onclick = () => { save(load().filter(x => x.id !== s.id)); render(); };
-      tr.lastElementChild.appendChild(btn);
-
-      tbody.appendChild(tr);
-    }
+  function uuid(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
   }
-
-  function uuid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
 
   function addSession(){
     setMsg("", "");
@@ -280,7 +341,15 @@
     save(data);
 
     setMsg("", "✅ Session ajoutée !");
-    render();
+    renderAll();
+  }
+
+  function clearInputs(){
+    $("laps").value = "";
+    $("minutes").value = "";
+    $("note").value = "";
+    computeLiveKpis();
+    setMsg("", "");
   }
 
   function exportJSON(){
@@ -305,17 +374,22 @@
         const text = await file.text();
         const parsed = JSON.parse(text);
         if (!Array.isArray(parsed)) throw new Error("Format invalide (tableau attendu).");
-        const clean = parsed.map(x => ({
-          id: x.id || uuid(),
-          date: x.date || "",
-          poolLen: Number(x.poolLen) || 0,
-          laps: Number(x.laps) || 0,
-          minutes: Number(x.minutes) || 0,
-          totalMeters: Number(x.totalMeters) || meters(Number(x.laps)||0, Number(x.poolLen)||0),
-          note: (x.note || "").toString()
-        })).filter(x => x.poolLen > 0 && x.minutes > 0);
+
+        const clean = parsed
+          .filter(x => x && typeof x === "object")
+          .map(x => ({
+            id: x.id || uuid(),
+            date: x.date || "",
+            poolLen: Number(x.poolLen) || 0,
+            laps: Number(x.laps) || 0,
+            minutes: Number(x.minutes) || 0,
+            totalMeters: Number(x.totalMeters) || meters(Number(x.laps)||0, Number(x.poolLen)||0),
+            note: (x.note || "").toString()
+          }))
+          .filter(x => x.poolLen > 0 && x.minutes > 0);
+
         save(clean);
-        render();
+        renderAll();
         setMsg("", "✅ Import effectué !");
       } catch (e){
         setMsg("❌ Import impossible : " + (e?.message || e));
@@ -327,8 +401,135 @@
   function wipeAll(){
     if (!confirm("Tout effacer ? (irréversible)")) return;
     localStorage.removeItem(STORAGE_KEY);
-    render();
+    renderAll();
     setMsg("", "✅ Historique effacé.");
+  }
+
+  // --- Weekly stats ---
+  function buildWeeklyStats(sessions){
+    const map = new Map(); // weekKey -> agg
+    for (const s of sessions){
+      const d = parseISODate(s.date);
+      if (!d) continue;
+      const w = getISOWeekInfo(d);
+
+      if (!map.has(w.weekKey)){
+        map.set(w.weekKey, {
+          weekKey: w.weekKey,
+          weekStartISO: w.weekStartISO,
+          sessions: 0,
+          totalMeters: 0,
+          totalMinutes: 0
+        });
+      }
+      const agg = map.get(w.weekKey);
+      agg.sessions += 1;
+      agg.totalMeters += Number(s.totalMeters) || 0;
+      agg.totalMinutes += Number(s.minutes) || 0;
+    }
+
+    // to array sorted by weekStart desc
+    const arr = Array.from(map.values()).sort((a,b) => (b.weekStartISO||"").localeCompare(a.weekStartISO||""));
+    return arr;
+  }
+
+  function filterWeeklyRange(weeklyArr){
+    const v = $("weekRange").value;
+    if (v === "all") return weeklyArr;
+
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return weeklyArr;
+
+    // Keep last N weeks based on entries order (already desc)
+    return weeklyArr.slice(0, n);
+  }
+
+  function renderWeekly(){
+    const sessions = load();
+    const weeklyAll = buildWeeklyStats(sessions);
+    const weekly = filterWeeklyRange(weeklyAll);
+
+    // headline stats
+    const totalMeters = weekly.reduce((s,x)=>s+x.totalMeters,0);
+    const best = weekly.reduce((m,x)=>!m || x.totalMeters > m.totalMeters ? x : m, null);
+    const avg = weekly.length ? (totalMeters / weekly.length) : 0;
+
+    $("wTotal").textContent = `Total: ${totalMeters} m (${(totalMeters/1000).toFixed(2)} km)`;
+    $("wBest").textContent = best
+      ? `Meilleure semaine: ${best.weekKey} • ${(best.totalMeters/1000).toFixed(2)} km`
+      : "Meilleure semaine: —";
+    $("wAvg").textContent = weekly.length
+      ? `Moyenne/semaine: ${(avg/1000).toFixed(2)} km`
+      : "Moyenne/semaine: —";
+
+    // table
+    const tbody = $("tbodyWeeks");
+    tbody.innerHTML = "";
+
+    for (const w of weekly){
+      const pace = formatPace(paceMinPer100m(w.totalMeters, w.totalMinutes)); // weighted by distance
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${w.weekKey} <span class="muted" style="font-size:12px;">(déb. ${w.weekStartISO})</span></td>
+        <td class="right">${w.sessions}</td>
+        <td class="right">${w.totalMeters} m <span class="muted">(${(w.totalMeters/1000).toFixed(2)} km)</span></td>
+        <td class="right">${w.totalMinutes.toFixed(1)} min</td>
+        <td class="right">${pace}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    if (weekly.length === 0){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="5" class="muted">Ajoute une session pour voir les stats par semaine.</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderSessions(){
+    const data = load();
+    const sorted = sortSessions(data);
+
+    const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
+    $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
+    $("sumPill").textContent = `Total: ${total} m`;
+
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+
+    for (const s of sorted){
+      const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
+      const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
+
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${s.date || "—"}</td>
+        <td>${details}</td>
+        <td class="right">${s.totalMeters} m</td>
+        <td class="right">${s.minutes} min</td>
+        <td class="right">${pace}</td>
+        <td class="right"></td>
+      `;
+
+      const btn = document.createElement("button");
+      btn.textContent = "Supprimer";
+      btn.className = "btn2";
+      btn.style.width = "auto";
+      btn.onclick = () => {
+        save(load().filter(x => x.id !== s.id));
+        renderAll();
+      };
+      tr.lastElementChild.appendChild(btn);
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  function renderAll(){
+    renderWeekly();
+    renderSessions();
+    computeLiveKpis();
   }
 
   // Init
@@ -336,15 +537,16 @@
   $("poolLen").value = 25;
 
   ["poolLen","laps","minutes"].forEach(id => $(id).addEventListener("input", computeLiveKpis));
-  $("sort").addEventListener("change", render);
+  $("sort").addEventListener("change", renderSessions);
+  $("weekRange").addEventListener("change", renderWeekly);
 
   $("addBtn").addEventListener("click", addSession);
+  $("clearInputsBtn").addEventListener("click", clearInputs);
   $("exportBtn").addEventListener("click", exportJSON);
   $("importBtn").addEventListener("click", importJSON);
   $("wipeBtn").addEventListener("click", wipeAll);
 
-  computeLiveKpis();
-  render();
+  renderAll();
 </script>
 </body>
 </html>
