@@ -1,564 +1,166 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Journal Piscine</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Journal Piscine</title>
 
-  <!-- PWA / iPhone -->
-  <meta name="theme-color" content="#0b1220">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    body { margin: 0; background: #0b1220; color: #e6eefc; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
-    h1 { margin: 0 0 14px; font-size: 22px; }
-    .card { background: #121b2e; border: 1px solid #233055; border-radius: 14px; padding: 16px; }
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
-    .col-12{ grid-column: span 12; }
-    .col-6{ grid-column: span 6; }
-    .col-4{ grid-column: span 4; }
-    @media (max-width: 760px){
-      .col-6,.col-4{ grid-column: span 12; }
-    }
-    label { display:block; font-size: 12px; opacity: .9; margin-bottom: 6px; }
-    input, button, select {
-      width: 100%; box-sizing: border-box;
-      background: #0c1427; color: #e6eefc;
-      border: 1px solid #26365f; border-radius: 12px;
-      padding: 12px; outline: none;
-    }
-    input:focus, select:focus { border-color: #4f7cff; }
-    .row { display:flex; gap: 10px; flex-wrap: wrap; }
-    button { cursor: pointer; font-weight: 650; }
-    .btn { background: #4f7cff; border-color: #4f7cff; }
-    .btn2 { background: #162243; }
-    .danger { background: #ff4f6a; border-color: #ff4f6a; }
-    .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
-    @media (max-width: 760px){ .kpis { grid-template-columns: repeat(2, 1fr);} }
-    .kpi { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
-    .kpi .t { font-size: 12px; opacity: .85; }
-    .kpi .v { font-size: 18px; font-weight: 750; margin-top: 4px; }
+<link rel="manifest" href="manifest.webmanifest">
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; overflow: hidden; border-radius: 12px; }
-    th, td { padding: 10px; border-bottom: 1px solid #243356; text-align: left; font-size: 13px; }
-    th { font-size: 12px; opacity: .9; background: #0c1427; }
-    tr:hover td { background: rgba(79,124,255,.06); }
-    .right { text-align:right; }
-    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background: #0c1427; border:1px solid #26365f; font-size: 12px; }
-    .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .error { color: #ffb4bf; margin-top: 8px; }
-    .success { color: #b7ffd2; margin-top: 8px; }
-    .muted { opacity:.8; }
-    details summary { cursor:pointer; user-select:none; }
-    .chiprow { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
-    .subnote { font-size:12px; opacity:.85; margin-top:6px; }
-  </style>
+<style>
+body{margin:0;background:#0b1220;color:#e6eefc;font-family:system-ui}
+.wrap{max-width:980px;margin:auto;padding:20px}
+.card{background:#121b2e;border-radius:14px;padding:16px;margin-bottom:14px}
+h1{margin:0 0 14px}
+input,button,select{width:100%;padding:12px;border-radius:12px;border:1px solid #26365f;background:#0c1427;color:#fff}
+button{font-weight:700;cursor:pointer}
+.btn{background:#4f7cff}
+.btn2{background:#162243}
+.danger{background:#ff4f6a}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+.kpi{background:#0c1427;border-radius:12px;padding:12px;border:1px solid #26365f}
+.kpi .t{font-size:12px;opacity:.8}
+.kpi .v{font-size:18px;font-weight:700}
+.pill{background:#0c1427;padding:4px 8px;border-radius:999px;font-size:12px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{padding:10px;border-bottom:1px solid #26365f;font-size:13px}
+.right{text-align:right}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>🏊 Journal Piscine</h1>
+<div class="wrap">
+<h1>🏊 Journal Piscine</h1>
 
-    <div class="card">
-      <div class="grid">
-        <div class="col-6">
-          <label for="date">Date</label>
-          <input id="date" type="date" />
-        </div>
+<div class="card">
+<input id="date" type="date"><br><br>
+<input id="poolLen" type="number" placeholder="Longueur bassin (m)" value="25"><br><br>
+<input id="laps" type="number" placeholder="Nombre de longueurs"><br><br>
+<input id="minutes" type="number" placeholder="Temps (min)"><br><br>
+<input id="note" placeholder="Note"><br><br>
 
-        <div class="col-6">
-          <label for="poolLen">Taille d’une longueur (mètres)</label>
-          <input id="poolLen" type="number" min="1" step="1" placeholder="25" />
-        </div>
+<button class="btn" onclick="addSession()">Ajouter la session</button><br><br>
+<button class="btn2" onclick="exportJSON()">Exporter JSON</button><br><br>
+<button class="btn2" onclick="importJSON()">Importer JSON</button><br><br>
+<button class="danger" onclick="wipeAll()">Tout effacer</button>
 
-        <div class="col-6">
-          <label for="laps">Nombre de longueurs</label>
-          <input id="laps" type="number" min="0" step="1" placeholder="40" />
-        </div>
+<div class="kpis">
+<div class="kpi"><div class="t">Distance totale</div><div class="v" id="kDistance">—</div></div>
+<div class="kpi"><div class="t">Allure moyenne</div><div class="v" id="kPace">—</div></div>
+<div class="kpi"><div class="t">Vitesse moyenne</div><div class="v" id="kSpeed">—</div></div>
+<div class="kpi"><div class="t">Cadence moyenne</div><div class="v" id="kRate">—</div></div>
+</div>
 
-        <div class="col-6">
-          <label for="minutes">Temps de session (minutes)</label>
-          <input id="minutes" type="number" min="0" step="0.1" placeholder="45" />
-        </div>
+<div id="kMeta" style="margin-top:8px;font-size:12px;opacity:.8"></div>
+</div>
 
-        <div class="col-12">
-          <label for="note">Note (optionnel)</label>
-          <input id="note" type="text" placeholder="Ex: éducatifs, pull buoy, sensations..." />
-        </div>
+<div class="card">
+<div class="pill" id="countPill"></div>
+<div class="pill" id="sumPill"></div>
 
-        <div class="col-12 row">
-          <button class="btn" id="addBtn">Ajouter la session</button>
-          <button class="btn2" id="clearInputsBtn" type="button">Vider le formulaire</button>
-          <button class="btn2" id="exportBtn" type="button">Exporter JSON</button>
-          <button class="btn2" id="importBtn" type="button">Importer JSON</button>
-          <button class="danger" id="wipeBtn" type="button">Tout effacer</button>
-        </div>
-
-        <div class="col-12">
-          <div class="inline">
-            <div class="pill">📊 Stats de l’historique</div>
-            <div style="flex:1"></div>
-            <div class="muted" style="font-size:12px;">(moyennes pondérées par la distance)</div>
-          </div>
-
-          <div class="kpis">
-            <div class="kpi">
-              <div class="t">Distance totale</div>
-              <div class="v" id="kDistance">—</div>
-              <div class="muted" style="font-size:12px" id="kDistance2"></div>
-            </div>
-            <div class="kpi">
-              <div class="t">Allure moyenne</div>
-              <div class="v" id="kPace">—</div>
-              <div class="muted" style="font-size:12px">min / 100 m</div>
-            </div>
-            <div class="kpi">
-              <div class="t">Vitesse moyenne</div>
-              <div class="v" id="kSpeed">—</div>
-              <div class="muted" style="font-size:12px">km/h</div>
-            </div>
-            <div class="kpi">
-              <div class="t">Cadence moyenne</div>
-              <div class="v" id="kRate">—</div>
-              <div class="muted" style="font-size:12px">m/min</div>
-            </div>
-          </div>
-
-          <div class="subnote muted" id="kMeta"></div>
-
-          <div class="error" id="msg"></div>
-          <div class="success" id="msgOk"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STATS PAR SEMAINE -->
-    <div class="card" style="margin-top:14px;">
-      <div class="inline">
-        <div class="pill">📅 Stats par semaine</div>
-        <div style="flex:1"></div>
-        <select id="weekRange">
-          <option value="8">8 dernières semaines</option>
-          <option value="12">12 dernières semaines</option>
-          <option value="26">26 dernières semaines</option>
-          <option value="52">52 dernières semaines</option>
-          <option value="all">Tout</option>
-        </select>
-      </div>
-
-      <div class="chiprow">
-        <div class="pill" id="wTotal">Total: —</div>
-        <div class="pill" id="wBest">Meilleure semaine: —</div>
-        <div class="pill" id="wAvg">Moyenne/semaine: —</div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Semaine</th>
-            <th class="right">Sessions</th>
-            <th class="right">Distance</th>
-            <th class="right">Temps</th>
-            <th class="right">Allure moy.</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyWeeks"></tbody>
-      </table>
-
-      <details style="margin-top:10px;">
-        <summary class="muted">Comprendre l’allure moyenne</summary>
-        <div class="muted" style="font-size:13px;margin-top:8px;line-height:1.4;">
-          L’allure moyenne est calculée <b>pondérée par la distance</b> :
-          (temps total de la semaine) / (distance totale), convertie en <b>min/100m</b>.
-        </div>
-      </details>
-    </div>
-
-    <!-- LISTE DES SESSIONS -->
-    <div class="card" style="margin-top:14px;">
-      <div class="inline">
-        <div class="pill" id="countPill">0 session</div>
-        <div class="pill" id="sumPill">Total: 0 m</div>
-        <div style="flex:1"></div>
-        <select id="sort">
-          <option value="date_desc">Trier: date (récent → ancien)</option>
-          <option value="date_asc">Trier: date (ancien → récent)</option>
-          <option value="dist_desc">Trier: distance (↓)</option>
-          <option value="time_desc">Trier: temps (↓)</option>
-        </select>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Détails</th>
-            <th class="right">Distance</th>
-            <th class="right">Temps</th>
-            <th class="right">Allure</th>
-            <th class="right">Action</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-
-      <div class="muted" style="margin-top:10px;font-size:12px;">
-        Données sauvegardées localement sur cet iPhone (localStorage). Utilise Export/Import si tu changes d’appareil.
-      </div>
-    </div>
-  </div>
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Détails</th>
+<th class="right">Distance</th>
+<th class="right">Temps</th>
+<th class="right">Allure</th>
+<th></th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+</div>
 
 <script>
-  const $ = (id) => document.getElementById(id);
-  const STORAGE_KEY = "swim_sessions_v1";
+const STORAGE_KEY="swim_sessions_v1";
+const $=id=>document.getElementById(id);
 
-  function todayISO(){
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
+function todayISO(){return new Date().toISOString().slice(0,10)}
+$("date").value=todayISO()
 
-  function load(){
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-    catch { return []; }
-  }
-  function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function meters(l,p){return Number(l)*Number(p)}
+function pace(m,t){return t/(m/100)}
+function fmtPace(p){if(!p)return"—";const s=Math.round(p*60);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function speed(m,t){return(m/1000)/(t/60)}
+function rate(m,t){return m/t}
 
-  function meters(laps, poolLen){
-    return (Number(laps) || 0) * (Number(poolLen) || 0);
-  }
+function load(){return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]")}
+function save(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}
 
-  function paceMinPer100m(totalMeters, minutes){
-    const m = Number(totalMeters);
-    const t = Number(minutes);
-    if (m <= 0 || t <= 0) return null;
-    return t / (m / 100);
-  }
+function addSession(){
+const s={
+id:Date.now(),
+date:$("date").value,
+poolLen:+$("poolLen").value,
+laps:+$("laps").value,
+minutes:+$("minutes").value,
+note:$("note").value,
+totalMeters:meters($("laps").value,$("poolLen").value)
+}
+const d=load();d.push(s);save(d);render()
+}
 
-  function formatPace(minPer100){
-    if (minPer100 == null) return "—";
-    const totalSeconds = Math.round(minPer100 * 60);
-    const mm = Math.floor(totalSeconds / 60);
-    const ss = String(totalSeconds % 60).padStart(2,"0");
-    return `${mm}:${ss}`;
-  }
+function render(){
+const d=load()
+let tm=0,tt=0
+d.forEach(x=>{tm+=x.totalMeters;tt+=x.minutes})
 
-  function speedKmh(totalMeters, minutes){
-    const m = Number(totalMeters);
-    const t = Number(minutes);
-    if (m <= 0 || t <= 0) return null;
-    return (m / 1000) / (t / 60);
-  }
+$("kDistance").textContent=tm+" m"
+$("kPace").textContent=fmtPace(pace(tm,tt))
+$("kSpeed").textContent=speed(tm,tt).toFixed(2)+" km/h"
+$("kRate").textContent=rate(tm,tt).toFixed(1)+" m/min"
+$("kMeta").textContent=`${d.length} sessions • ${tt} min`
 
-  function rateMPerMin(totalMeters, minutes){
-    const m = Number(totalMeters);
-    const t = Number(minutes);
-    if (m <= 0 || t <= 0) return null;
-    return m / t;
-  }
+$("countPill").textContent=d.length+" sessions"
+$("sumPill").textContent="Total "+tm+" m"
 
-  function setMsg(err="", ok=""){
-    $("msg").textContent = err;
-    $("msgOk").textContent = ok;
-  }
+$("tbody").innerHTML=""
+d.slice().reverse().forEach(s=>{
+const tr=document.createElement("tr")
+tr.innerHTML=`<td>${s.date}</td>
+<td>${s.laps}x${s.poolLen}m ${s.note||""}</td>
+<td class="right">${s.totalMeters} m</td>
+<td class="right">${s.minutes} min</td>
+<td class="right">${fmtPace(pace(s.totalMeters,s.minutes))}</td>
+<td><button onclick="del(${s.id})">Suppr</button></td>`
+$("tbody").appendChild(tr)
+})
+}
 
-  // ✅ KPIs basés sur l’historique (toutes les sessions)
-  function computeHistoryKpis(){
-    const data = load();
+function del(id){save(load().filter(x=>x.id!=id));render()}
 
-    const totalMeters = data.reduce((s,x)=>s+(Number(x.totalMeters)||0),0);
-    const totalMinutes = data.reduce((s,x)=>s+(Number(x.minutes)||0),0);
+function exportJSON(){
+const b=new Blob([JSON.stringify(load(),null,2)],{type:"application/json"})
+const a=document.createElement("a")
+a.href=URL.createObjectURL(b);a.download="sessions.json";a.click()
+}
 
-    $("kDistance").textContent = totalMeters > 0 ? `${totalMeters} m` : "—";
-    $("kDistance2").textContent = totalMeters > 0 ? `${(totalMeters/1000).toFixed(2)} km` : "";
+function importJSON(){
+const i=document.createElement("input");i.type="file"
+i.onchange=e=>{
+const f=e.target.files[0]
+f.text().then(t=>{save(JSON.parse(t));render()})
+}
+i.click()
+}
 
-    // Allure / vitesse / cadence moyennes pondérées par la distance
-    $("kPace").textContent = formatPace(paceMinPer100m(totalMeters, totalMinutes));
+function wipeAll(){if(confirm("Effacer ?")){localStorage.clear();render()}}
 
-    const sp = speedKmh(totalMeters, totalMinutes);
-    $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
-
-    const r = rateMPerMin(totalMeters, totalMinutes);
-    $("kRate").textContent = r == null ? "—" : r.toFixed(1);
-
-    if (data.length === 0){
-      $("kMeta").textContent = "Ajoute une session pour voir les stats de l’historique.";
-      return;
-    }
-
-    const firstDate = data.map(x=>x.date).filter(Boolean).sort()[0];
-    const lastDate = data.map(x=>x.date).filter(Boolean).sort().slice(-1)[0];
-    $("kMeta").textContent = `Sessions: ${data.length} • Temps total: ${totalMinutes.toFixed(1)} min • Période: ${firstDate || "—"} → ${lastDate || "—"}`;
-  }
-
-  // --- ISO WEEK helpers (semaine ISO : lundi->dimanche) ---
-  function parseISODate(iso){
-    const [y,m,d] = (iso||"").split("-").map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m-1, d);
-  }
-
-  function getISOWeekInfo(date){
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7; // 1..7 (Mon..Sun)
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-
-    // week start (Monday) for display
-    const d2 = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum2 = d2.getUTCDay() || 7;
-    d2.setUTCDate(d2.getUTCDate() - (dayNum2 - 1));
-    const ws = new Date(Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate()));
-    const weekStartISO = ws.toISOString().slice(0,10);
-
-    const year = d.getUTCFullYear();
-    const weekKey = `${year}-W${String(week).padStart(2,"0")}`;
-    return { year, week, weekKey, weekStartISO };
-  }
-
-  function sortSessions(data){
-    const mode = $("sort").value;
-    const copy = [...data];
-    copy.sort((a,b) => {
-      if (mode === "date_desc") return (b.date||"").localeCompare(a.date||"");
-      if (mode === "date_asc") return (a.date||"").localeCompare(b.date||"");
-      if (mode === "dist_desc") return (b.totalMeters||0) - (a.totalMeters||0);
-      if (mode === "time_desc") return (b.minutes||0) - (a.minutes||0);
-      return 0;
-    });
-    return copy;
-  }
-
-  function uuid(){
-    return Math.random().toString(16).slice(2) + Date.now().toString(16);
-  }
-
-  function addSession(){
-    setMsg("", "");
-    const date = $("date").value || todayISO();
-    const poolLen = Number($("poolLen").value);
-    const laps = Number($("laps").value);
-    const minutes = Number($("minutes").value);
-    const note = ($("note").value || "").trim();
-
-    if (!poolLen || poolLen <= 0) return setMsg("👉 Indique la taille d’une longueur (en mètres).");
-    if (!Number.isFinite(laps) || laps < 0) return setMsg("👉 Le nombre de longueurs doit être ≥ 0.");
-    if (!minutes || minutes <= 0) return setMsg("👉 Indique le temps de session (en minutes).");
-
-    const totalMeters = meters(laps, poolLen);
-    const session = { id: uuid(), date, poolLen, laps, minutes, totalMeters, note };
-
-    const data = load();
-    data.push(session);
-    save(data);
-
-    setMsg("", "✅ Session ajoutée !");
-    renderAll();
-  }
-
-  function clearInputs(){
-    $("laps").value = "";
-    $("minutes").value = "";
-    $("note").value = "";
-    setMsg("", "");
-  }
-
-  function exportJSON(){
-    const data = load();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "sessions_piscine.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importJSON(){
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = "application/json";
-    inp.onchange = async () => {
-      const file = inp.files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        if (!Array.isArray(parsed)) throw new Error("Format invalide (tableau attendu).");
-
-        const clean = parsed
-          .filter(x => x && typeof x === "object")
-          .map(x => ({
-            id: x.id || uuid(),
-            date: x.date || "",
-            poolLen: Number(x.poolLen) || 0,
-            laps: Number(x.laps) || 0,
-            minutes: Number(x.minutes) || 0,
-            totalMeters: Number(x.totalMeters) || meters(Number(x.laps)||0, Number(x.poolLen)||0),
-            note: (x.note || "").toString()
-          }))
-          .filter(x => x.poolLen > 0 && x.minutes > 0);
-
-        save(clean);
-        renderAll();
-        setMsg("", "✅ Import effectué !");
-      } catch (e){
-        setMsg("❌ Import impossible : " + (e?.message || e));
-      }
-    };
-    inp.click();
-  }
-
-  function wipeAll(){
-    if (!confirm("Tout effacer ? (irréversible)")) return;
-    localStorage.removeItem(STORAGE_KEY);
-    renderAll();
-    setMsg("", "✅ Historique effacé.");
-  }
-
-  // --- Weekly stats ---
-  function buildWeeklyStats(sessions){
-    const map = new Map(); // weekKey -> agg
-    for (const s of sessions){
-      const d = parseISODate(s.date);
-      if (!d) continue;
-      const w = getISOWeekInfo(d);
-
-      if (!map.has(w.weekKey)){
-        map.set(w.weekKey, {
-          weekKey: w.weekKey,
-          weekStartISO: w.weekStartISO,
-          sessions: 0,
-          totalMeters: 0,
-          totalMinutes: 0
-        });
-      }
-      const agg = map.get(w.weekKey);
-      agg.sessions += 1;
-      agg.totalMeters += Number(s.totalMeters) || 0;
-      agg.totalMinutes += Number(s.minutes) || 0;
-    }
-
-    const arr = Array.from(map.values()).sort((a,b) => (b.weekStartISO||"").localeCompare(a.weekStartISO||""));
-    return arr;
-  }
-
-  function filterWeeklyRange(weeklyArr){
-    const v = $("weekRange").value;
-    if (v === "all") return weeklyArr;
-
-    const n = Number(v);
-    if (!Number.isFinite(n) || n <= 0) return weeklyArr;
-
-    return weeklyArr.slice(0, n);
-  }
-
-  function renderWeekly(){
-    const sessions = load();
-    const weeklyAll = buildWeeklyStats(sessions);
-    const weekly = filterWeeklyRange(weeklyAll);
-
-    const totalMeters = weekly.reduce((s,x)=>s+x.totalMeters,0);
-    const best = weekly.reduce((m,x)=>!m || x.totalMeters > m.totalMeters ? x : m, null);
-    const avg = weekly.length ? (totalMeters / weekly.length) : 0;
-
-    $("wTotal").textContent = `Total: ${totalMeters} m (${(totalMeters/1000).toFixed(2)} km)`;
-    $("wBest").textContent = best
-      ? `Meilleure semaine: ${best.weekKey} • ${(best.totalMeters/1000).toFixed(2)} km`
-      : "Meilleure semaine: —";
-    $("wAvg").textContent = weekly.length
-      ? `Moyenne/semaine: ${(avg/1000).toFixed(2)} km`
-      : "Moyenne/semaine: —";
-
-    const tbody = $("tbodyWeeks");
-    tbody.innerHTML = "";
-
-    for (const w of weekly){
-      const pace = formatPace(paceMinPer100m(w.totalMeters, w.totalMinutes));
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${w.weekKey} <span class="muted" style="font-size:12px;">(déb. ${w.weekStartISO})</span></td>
-        <td class="right">${w.sessions}</td>
-        <td class="right">${w.totalMeters} m <span class="muted">(${(w.totalMeters/1000).toFixed(2)} km)</span></td>
-        <td class="right">${w.totalMinutes.toFixed(1)} min</td>
-        <td class="right">${pace}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-
-    if (weekly.length === 0){
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="5" class="muted">Ajoute une session pour voir les stats par semaine.</td>`;
-      tbody.appendChild(tr);
-    }
-  }
-
-  function renderSessions(){
-    const data = load();
-    const sorted = sortSessions(data);
-
-    const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
-    $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
-    $("sumPill").textContent = `Total: ${total} m`;
-
-    const tbody = $("tbody");
-    tbody.innerHTML = "";
-
-    for (const s of sorted){
-      const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
-      const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
-
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td>${s.date || "—"}</td>
-        <td>${details}</td>
-        <td class="right">${s.totalMeters} m</td>
-        <td class="right">${s.minutes} min</td>
-        <td class="right">${pace}</td>
-        <td class="right"></td>
-      `;
-
-      const btn = document.createElement("button");
-      btn.textContent = "Supprimer";
-      btn.className = "btn2";
-      btn.style.width = "auto";
-      btn.onclick = () => {
-        save(load().filter(x => x.id !== s.id));
-        renderAll();
-      };
-      tr.lastElementChild.appendChild(btn);
-
-      tbody.appendChild(tr);
-    }
-  }
-
-  function renderAll(){
-    renderWeekly();
-    renderSessions();
-    computeHistoryKpis(); // ✅ affichage des KPIs à partir des sessions enregistrées
-  }
-
-  // Init
-  $("date").value = todayISO();
-  $("poolLen").value = 25;
-
-  // Les champs servent juste à saisir une session, pas à afficher les stats principales
-  $("sort").addEventListener("change", renderSessions);
-  $("weekRange").addEventListener("change", renderWeekly);
-
-  $("addBtn").addEventListener("click", addSession);
-  $("clearInputsBtn").addEventListener("click", clearInputs);
-  $("exportBtn").addEventListener("click", exportJSON);
-  $("importBtn").addEventListener("click", importJSON);
-  $("wipeBtn").addEventListener("click", wipeAll);
-
-  renderAll();
+render()
 </script>
+
+<script>
+if("serviceWorker"in navigator){
+navigator.serviceWorker.register("./sw.js")
+}
+</script>
+
 </body>
 </html>
