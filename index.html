@@ -1,166 +1,883 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Journal Piscine</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Journal Piscine</title>
 
-<meta name="theme-color" content="#0b1220">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- PWA / iPhone -->
+  <meta name="theme-color" content="#0b1220">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
 
-<link rel="manifest" href="manifest.webmanifest">
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; background: #0b1220; color: #e6eefc; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
+    h1 { margin: 0 0 14px; font-size: 22px; }
+    .card { background: #121b2e; border: 1px solid #233055; border-radius: 14px; padding: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+    .col-12{ grid-column: span 12; }
+    .col-6{ grid-column: span 6; }
+    .col-4{ grid-column: span 4; }
+    .col-3{ grid-column: span 3; }
+    @media (max-width: 760px){
+      .col-6,.col-4,.col-3{ grid-column: span 12; }
+      .wrap{ padding: 14px; }
+    }
+    label { display:block; font-size: 12px; opacity: .9; margin-bottom: 6px; }
+    input, button, select, textarea {
+      width: 100%; box-sizing: border-box;
+      background: #0c1427; color: #e6eefc;
+      border: 1px solid #26365f; border-radius: 12px;
+      padding: 12px; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #4f7cff; }
+    .row { display:flex; gap: 10px; flex-wrap: wrap; }
+    button { cursor: pointer; font-weight: 650; }
+    .btn { background: #4f7cff; border-color: #4f7cff; }
+    .btn2 { background: #162243; }
+    .danger { background: #ff4f6a; border-color: #ff4f6a; }
+    .ghost { background: transparent; border-color: #26365f; }
+    .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+    @media (max-width: 760px){ .kpis { grid-template-columns: repeat(2, 1fr);} }
+    .kpi { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
+    .kpi .t { font-size: 12px; opacity: .85; }
+    .kpi .v { font-size: 18px; font-weight: 750; margin-top: 4px; }
+    .kpi .s { font-size: 12px; opacity:.8; margin-top: 4px; }
 
-<style>
-body{margin:0;background:#0b1220;color:#e6eefc;font-family:system-ui}
-.wrap{max-width:980px;margin:auto;padding:20px}
-.card{background:#121b2e;border-radius:14px;padding:16px;margin-bottom:14px}
-h1{margin:0 0 14px}
-input,button,select{width:100%;padding:12px;border-radius:12px;border:1px solid #26365f;background:#0c1427;color:#fff}
-button{font-weight:700;cursor:pointer}
-.btn{background:#4f7cff}
-.btn2{background:#162243}
-.danger{background:#ff4f6a}
-.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
-.kpi{background:#0c1427;border-radius:12px;padding:12px;border:1px solid #26365f}
-.kpi .t{font-size:12px;opacity:.8}
-.kpi .v{font-size:18px;font-weight:700}
-.pill{background:#0c1427;padding:4px 8px;border-radius:999px;font-size:12px}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{padding:10px;border-bottom:1px solid #26365f;font-size:13px}
-.right{text-align:right}
-</style>
+    /* ✅ Table responsive (moins large) */
+    .tablewrap { overflow-x: auto; border-radius: 12px; border: 1px solid #26365f; }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { padding: 10px; border-bottom: 1px solid #243356; text-align: left; font-size: 13px; white-space: nowrap; }
+    th { font-size: 12px; opacity: .9; background: #0c1427; position: sticky; top: 0; }
+    tr:hover td { background: rgba(79,124,255,.06); }
+    .right { text-align:right; }
+    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background: #0c1427; border:1px solid #26365f; font-size: 12px; }
+    .inline { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .error { color: #ffb4bf; margin-top: 8px; }
+    .success { color: #b7ffd2; margin-top: 8px; }
+    .muted { opacity:.8; }
+    details summary { cursor:pointer; user-select:none; }
+    .chiprow { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+
+    /* Charts */
+    .chartBox { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
+    canvas { width: 100%; height: 220px; display:block; }
+    .small { font-size: 12px; opacity:.85; }
+  </style>
 </head>
 
 <body>
-<div class="wrap">
-<h1>🏊 Journal Piscine</h1>
+  <div class="wrap">
+    <h1>🏊 Journal Piscine</h1>
 
-<div class="card">
-<input id="date" type="date"><br><br>
-<input id="poolLen" type="number" placeholder="Longueur bassin (m)" value="25"><br><br>
-<input id="laps" type="number" placeholder="Nombre de longueurs"><br><br>
-<input id="minutes" type="number" placeholder="Temps (min)"><br><br>
-<input id="note" placeholder="Note"><br><br>
+    <!-- FORM + HISTO KPIS -->
+    <div class="card">
+      <div class="grid">
+        <div class="col-6">
+          <label for="date">Date</label>
+          <input id="date" type="date" />
+        </div>
 
-<button class="btn" onclick="addSession()">Ajouter la session</button><br><br>
-<button class="btn2" onclick="exportJSON()">Exporter JSON</button><br><br>
-<button class="btn2" onclick="importJSON()">Importer JSON</button><br><br>
-<button class="danger" onclick="wipeAll()">Tout effacer</button>
+        <div class="col-6">
+          <label for="poolLen">Taille d’une longueur (mètres)</label>
+          <input id="poolLen" type="number" min="1" step="1" placeholder="25" />
+        </div>
 
-<div class="kpis">
-<div class="kpi"><div class="t">Distance totale</div><div class="v" id="kDistance">—</div></div>
-<div class="kpi"><div class="t">Allure moyenne</div><div class="v" id="kPace">—</div></div>
-<div class="kpi"><div class="t">Vitesse moyenne</div><div class="v" id="kSpeed">—</div></div>
-<div class="kpi"><div class="t">Cadence moyenne</div><div class="v" id="kRate">—</div></div>
-</div>
+        <div class="col-6">
+          <label for="laps">Nombre de longueurs</label>
+          <input id="laps" type="number" min="0" step="1" placeholder="40" />
+        </div>
 
-<div id="kMeta" style="margin-top:8px;font-size:12px;opacity:.8"></div>
-</div>
+        <div class="col-6">
+          <label for="minutes">Temps de session (minutes)</label>
+          <input id="minutes" type="number" min="0" step="0.1" placeholder="45" />
+        </div>
 
-<div class="card">
-<div class="pill" id="countPill"></div>
-<div class="pill" id="sumPill"></div>
+        <div class="col-12">
+          <label for="note">Note (optionnel)</label>
+          <input id="note" type="text" placeholder="Ex: éducatifs, pull buoy, sensations..." />
+        </div>
 
-<table>
-<thead>
-<tr>
-<th>Date</th>
-<th>Détails</th>
-<th class="right">Distance</th>
-<th class="right">Temps</th>
-<th class="right">Allure</th>
-<th></th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
-</table>
-</div>
-</div>
+        <!-- kcal inputs -->
+        <div class="col-6">
+          <label for="weightKg">Poids (kg) pour kcal</label>
+          <input id="weightKg" type="number" min="30" max="250" step="0.1" placeholder="70" />
+        </div>
+
+        <div class="col-6">
+          <label for="intensity">Intensité nage (MET)</label>
+          <select id="intensity">
+            <option value="6">Facile (≈ 6 MET)</option>
+            <option value="8" selected>Modéré (≈ 8 MET)</option>
+            <option value="10">Soutenu (≈ 10 MET)</option>
+            <option value="12">Très soutenu (≈ 12 MET)</option>
+          </select>
+        </div>
+
+        <div class="col-12 row">
+          <button class="btn" id="addBtn">Ajouter la session</button>
+          <button class="btn2" id="forceBtn" type="button">Forcer la mise à jour des stats</button>
+          <button class="btn2" id="clearInputsBtn" type="button">Vider le formulaire</button>
+          <button class="btn2" id="exportBtn" type="button">Exporter JSON</button>
+          <button class="btn2" id="importBtn" type="button">Importer JSON</button>
+          <button class="danger" id="wipeBtn" type="button">Tout effacer</button>
+        </div>
+
+        <div class="col-12">
+          <div class="inline">
+            <div class="pill">📊 Stats de l’historique</div>
+            <div class="pill muted" id="activeKeyPill">storage: —</div>
+            <div style="flex:1"></div>
+            <div class="muted" style="font-size:12px;">(allure/vitesse/cadence pondérées par la distance)</div>
+          </div>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="t">Distance totale</div>
+              <div class="v" id="kDistance">—</div>
+              <div class="s" id="kDistance2"></div>
+            </div>
+            <div class="kpi">
+              <div class="t">Allure moyenne</div>
+              <div class="v" id="kPace">—</div>
+              <div class="s">min / 100 m</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Vitesse moyenne</div>
+              <div class="v" id="kSpeed">—</div>
+              <div class="s">km/h</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Cadence moyenne</div>
+              <div class="v" id="kRate">—</div>
+              <div class="s">m/min</div>
+            </div>
+          </div>
+
+          <div class="kpis" style="margin-top:10px;">
+            <div class="kpi">
+              <div class="t">Temps total</div>
+              <div class="v" id="kTime">—</div>
+              <div class="s" id="kPeriod">—</div>
+            </div>
+            <div class="kpi">
+              <div class="t">kcal estimées (total)</div>
+              <div class="v" id="kKcal">—</div>
+              <div class="s small" id="kKcalHint">Basé sur MET × poids × durée</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Record distance</div>
+              <div class="v" id="kRecDist">—</div>
+              <div class="s" id="kRecDist2"></div>
+            </div>
+            <div class="kpi">
+              <div class="t">Record allure</div>
+              <div class="v" id="kRecPace">—</div>
+              <div class="s" id="kRecPace2"></div>
+            </div>
+          </div>
+
+          <div class="error" id="msg"></div>
+          <div class="success" id="msgOk"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAPHIQUES + STATS MENSUELLES -->
+    <div class="card">
+      <div class="inline">
+        <div class="pill">📈 Graphiques & stats mensuelles</div>
+        <div style="flex:1"></div>
+        <select id="chartRange">
+          <option value="6">6 derniers mois</option>
+          <option value="12" selected>12 derniers mois</option>
+          <option value="24">24 derniers mois</option>
+          <option value="all">Tout</option>
+        </select>
+      </div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div class="col-12 chartBox">
+          <div class="inline">
+            <div class="pill">Distance par mois (km)</div>
+            <div style="flex:1"></div>
+            <div class="muted small">barres</div>
+          </div>
+          <canvas id="chartMonthly"></canvas>
+          <div class="muted small" id="chartMonthlyNote" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="col-12 chartBox">
+          <div class="inline">
+            <div class="pill">Allure moyenne par mois (min/100m)</div>
+            <div style="flex:1"></div>
+            <div class="muted small">ligne</div>
+          </div>
+          <canvas id="chartPace"></canvas>
+          <div class="muted small" id="chartPaceNote" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="col-12">
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mois</th>
+                  <th class="right">Sessions</th>
+                  <th class="right">Distance</th>
+                  <th class="right">Temps</th>
+                  <th class="right">Allure moy.</th>
+                  <th class="right">kcal</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyMonths"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTE DES SESSIONS -->
+    <div class="card">
+      <div class="inline">
+        <div class="pill" id="countPill">0 session</div>
+        <div class="pill" id="sumPill">Total: 0 m</div>
+        <div style="flex:1"></div>
+        <select id="sort">
+          <option value="date_desc">Trier: date (récent → ancien)</option>
+          <option value="date_asc">Trier: date (ancien → récent)</option>
+          <option value="dist_desc">Trier: distance (↓)</option>
+          <option value="time_desc">Trier: temps (↓)</option>
+          <option value="pace_asc">Trier: allure (rapide → lent)</option>
+        </select>
+      </div>
+
+      <div class="tablewrap" style="margin-top:10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Détails</th>
+              <th class="right">Distance</th>
+              <th class="right">Temps</th>
+              <th class="right">Allure</th>
+              <th class="right">kcal</th>
+              <th class="right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="muted" style="margin-top:10px;font-size:12px;">
+        Données sauvegardées localement (localStorage). Export/Import si tu changes d’appareil.
+      </div>
+    </div>
+  </div>
 
 <script>
-const STORAGE_KEY="swim_sessions_v1";
-const $=id=>document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
 
-function todayISO(){return new Date().toISOString().slice(0,10)}
-$("date").value=todayISO()
+  // ✅ on supporte plusieurs clés au cas où ton app a changé dans le temps
+  const STORAGE_KEYS = ["swim_sessions_v1", "swim_sessions", "sessions_piscine"];
+  let ACTIVE_KEY = null;
 
-function meters(l,p){return Number(l)*Number(p)}
-function pace(m,t){return t/(m/100)}
-function fmtPace(p){if(!p)return"—";const s=Math.round(p*60);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
-function speed(m,t){return(m/1000)/(t/60)}
-function rate(m,t){return m/t}
+  function todayISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
 
-function load(){return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]")}
-function save(d){localStorage.setItem(STORAGE_KEY,JSON.stringify(d))}
+  function meters(laps, poolLen){
+    return (Number(laps) || 0) * (Number(poolLen) || 0);
+  }
 
-function addSession(){
-const s={
-id:Date.now(),
-date:$("date").value,
-poolLen:+$("poolLen").value,
-laps:+$("laps").value,
-minutes:+$("minutes").value,
-note:$("note").value,
-totalMeters:meters($("laps").value,$("poolLen").value)
-}
-const d=load();d.push(s);save(d);render()
-}
+  function paceMinPer100m(totalMeters, minutes){
+    const m = Number(totalMeters);
+    const t = Number(minutes);
+    if (m <= 0 || t <= 0) return null;
+    return t / (m / 100);
+  }
 
-function render(){
-const d=load()
-let tm=0,tt=0
-d.forEach(x=>{tm+=x.totalMeters;tt+=x.minutes})
+  function formatPace(minPer100){
+    if (minPer100 == null) return "—";
+    const totalSeconds = Math.round(minPer100 * 60);
+    const mm = Math.floor(totalSeconds / 60);
+    const ss = String(totalSeconds % 60).padStart(2,"0");
+    return `${mm}:${ss}`;
+  }
 
-$("kDistance").textContent=tm+" m"
-$("kPace").textContent=fmtPace(pace(tm,tt))
-$("kSpeed").textContent=speed(tm,tt).toFixed(2)+" km/h"
-$("kRate").textContent=rate(tm,tt).toFixed(1)+" m/min"
-$("kMeta").textContent=`${d.length} sessions • ${tt} min`
+  function speedKmh(totalMeters, minutes){
+    const m = Number(totalMeters);
+    const t = Number(minutes);
+    if (m <= 0 || t <= 0) return null;
+    return (m / 1000) / (t / 60);
+  }
 
-$("countPill").textContent=d.length+" sessions"
-$("sumPill").textContent="Total "+tm+" m"
+  function rateMPerMin(totalMeters, minutes){
+    const m = Number(totalMeters);
+    const t = Number(minutes);
+    if (m <= 0 || t <= 0) return null;
+    return m / t;
+  }
 
-$("tbody").innerHTML=""
-d.slice().reverse().forEach(s=>{
-const tr=document.createElement("tr")
-tr.innerHTML=`<td>${s.date}</td>
-<td>${s.laps}x${s.poolLen}m ${s.note||""}</td>
-<td class="right">${s.totalMeters} m</td>
-<td class="right">${s.minutes} min</td>
-<td class="right">${fmtPace(pace(s.totalMeters,s.minutes))}</td>
-<td><button onclick="del(${s.id})">Suppr</button></td>`
-$("tbody").appendChild(tr)
-})
-}
+  // kcal estimation (MET × kg × hours)
+  function kcalFromMinutes(minutes){
+    const met = Number($("intensity").value) || 8;
+    const kg = Number($("weightKg").value) || 70;
+    const hours = (Number(minutes) || 0) / 60;
+    if (hours <= 0) return 0;
+    return met * kg * hours;
+  }
 
-function del(id){save(load().filter(x=>x.id!=id));render()}
+  function setMsg(err="", ok=""){
+    $("msg").textContent = err;
+    $("msgOk").textContent = ok;
+  }
 
-function exportJSON(){
-const b=new Blob([JSON.stringify(load(),null,2)],{type:"application/json"})
-const a=document.createElement("a")
-a.href=URL.createObjectURL(b);a.download="sessions.json";a.click()
-}
+  function findActiveKey(){
+    for (const k of STORAGE_KEYS){
+      const raw = localStorage.getItem(k);
+      if (!raw) continue;
+      try {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) return k;
+      } catch {}
+    }
+    return STORAGE_KEYS[0];
+  }
 
-function importJSON(){
-const i=document.createElement("input");i.type="file"
-i.onchange=e=>{
-const f=e.target.files[0]
-f.text().then(t=>{save(JSON.parse(t));render()})
-}
-i.click()
-}
+  function normalizeSession(x){
+    const poolLen = Number(x.poolLen) || 0;
+    const laps = Number(x.laps) || 0;
+    const minutes = Number(x.minutes) || 0;
 
-function wipeAll(){if(confirm("Effacer ?")){localStorage.clear();render()}}
+    // recalcul distance si absente ou invalide
+    const tm = Number(x.totalMeters);
+    const totalMeters = (Number.isFinite(tm) && tm > 0) ? tm : meters(laps, poolLen);
 
-render()
+    return {
+      id: x.id || (Math.random().toString(16).slice(2) + Date.now().toString(16)),
+      date: (x.date || "").toString(),
+      poolLen,
+      laps,
+      minutes,
+      totalMeters,
+      note: (x.note || "").toString()
+    };
+  }
+
+  function load(){
+    try {
+      const raw = localStorage.getItem(ACTIVE_KEY) || "[]";
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      return arr.map(normalizeSession).filter(s => s.poolLen > 0 && s.minutes > 0);
+    } catch {
+      return [];
+    }
+  }
+
+  function save(data){
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(data));
+  }
+
+  function uuid(){
+    return Math.random().toString(16).slice(2) + Date.now().toString(16);
+  }
+
+  function addSession(){
+    setMsg("", "");
+    const date = $("date").value || todayISO();
+    const poolLen = Number($("poolLen").value);
+    const laps = Number($("laps").value);
+    const minutes = Number($("minutes").value);
+    const note = ($("note").value || "").trim();
+
+    if (!poolLen || poolLen <= 0) return setMsg("👉 Indique la taille d’une longueur (en mètres).");
+    if (!Number.isFinite(laps) || laps < 0) return setMsg("👉 Le nombre de longueurs doit être ≥ 0.");
+    if (!minutes || minutes <= 0) return setMsg("👉 Indique le temps de session (en minutes).");
+
+    const totalMeters = meters(laps, poolLen);
+    const session = { id: uuid(), date, poolLen, laps, minutes, totalMeters, note };
+
+    const data = load();
+    data.push(session);
+    save(data);
+
+    setMsg("", "✅ Session ajoutée !");
+    renderAll();
+  }
+
+  function clearInputs(){
+    $("laps").value = "";
+    $("minutes").value = "";
+    $("note").value = "";
+    setMsg("", "");
+  }
+
+  function exportJSON(){
+    const data = load();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "sessions_piscine.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importJSON(){
+    const inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = "application/json";
+    inp.onchange = async () => {
+      const file = inp.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) throw new Error("Format invalide (tableau attendu).");
+
+        const clean = parsed
+          .filter(x => x && typeof x === "object")
+          .map(normalizeSession)
+          .filter(x => x.poolLen > 0 && x.minutes > 0);
+
+        save(clean);
+        renderAll();
+        setMsg("", "✅ Import effectué !");
+      } catch (e){
+        setMsg("❌ Import impossible : " + (e?.message || e));
+      }
+    };
+    inp.click();
+  }
+
+  function wipeAll(){
+    if (!confirm("Tout effacer ? (irréversible)")) return;
+    localStorage.removeItem(ACTIVE_KEY);
+    renderAll();
+    setMsg("", "✅ Historique effacé.");
+  }
+
+  // ---- Sort + render sessions
+  function sortSessions(data){
+    const mode = $("sort").value;
+    const copy = [...data];
+    copy.sort((a,b) => {
+      if (mode === "date_desc") return (b.date||"").localeCompare(a.date||"");
+      if (mode === "date_asc") return (a.date||"").localeCompare(b.date||"");
+      if (mode === "dist_desc") return (b.totalMeters||0) - (a.totalMeters||0);
+      if (mode === "time_desc") return (b.minutes||0) - (a.minutes||0);
+      if (mode === "pace_asc") {
+        const pa = paceMinPer100m(a.totalMeters, a.minutes);
+        const pb = paceMinPer100m(b.totalMeters, b.minutes);
+        if (pa == null && pb == null) return 0;
+        if (pa == null) return 1;
+        if (pb == null) return -1;
+        return pa - pb; // smaller = faster
+      }
+      return 0;
+    });
+    return copy;
+  }
+
+  function renderSessions(){
+    const data = load();
+    const sorted = sortSessions(data);
+
+    const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
+    $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
+    $("sumPill").textContent = `Total: ${total} m`;
+
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+
+    for (const s of sorted){
+      const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
+      const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
+      const kcal = kcalFromMinutes(s.minutes);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${s.date || "—"}</td>
+        <td title="${details.replaceAll('"','&quot;')}">${details}</td>
+        <td class="right">${s.totalMeters} m</td>
+        <td class="right">${Number(s.minutes).toFixed(1)} min</td>
+        <td class="right">${pace}</td>
+        <td class="right">${kcal ? kcal.toFixed(0) : "—"}</td>
+        <td class="right"></td>
+      `;
+
+      const btn = document.createElement("button");
+      btn.textContent = "Supprimer";
+      btn.className = "btn2";
+      btn.style.width = "auto";
+      btn.onclick = () => {
+        save(load().filter(x => x.id !== s.id));
+        renderAll();
+      };
+      tr.lastElementChild.appendChild(btn);
+      tbody.appendChild(tr);
+    }
+  }
+
+  // ---- History KPIs + records
+  function computeHistoryKpisAndRecords(){
+    // ✅ important: on normalise et on resauve, comme ça les vieux enregistrements deviennent compatibles
+    const raw = load();
+    save(raw);
+
+    const data = raw;
+    const totalMeters = data.reduce((s,x)=>s+(Number(x.totalMeters)||0),0);
+    const totalMinutes = data.reduce((s,x)=>s+(Number(x.minutes)||0),0);
+
+    $("kDistance").textContent = totalMeters > 0 ? `${totalMeters} m` : "—";
+    $("kDistance2").textContent = totalMeters > 0 ? `${(totalMeters/1000).toFixed(2)} km` : "";
+
+    $("kTime").textContent = totalMinutes > 0 ? `${totalMinutes.toFixed(1)} min` : "—";
+    $("kPace").textContent = formatPace(paceMinPer100m(totalMeters, totalMinutes));
+
+    const sp = speedKmh(totalMeters, totalMinutes);
+    $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
+
+    const r = rateMPerMin(totalMeters, totalMinutes);
+    $("kRate").textContent = r == null ? "—" : r.toFixed(1);
+
+    const totalKcal = data.reduce((s,x)=>s + kcalFromMinutes(x.minutes), 0);
+    $("kKcal").textContent = data.length ? `${totalKcal.toFixed(0)}` : "—";
+
+    const dates = data.map(x=>x.date).filter(Boolean).sort();
+    if (dates.length){
+      $("kPeriod").textContent = `Période: ${dates[0]} → ${dates[dates.length-1]} • ${data.length} sessions`;
+    } else {
+      $("kPeriod").textContent = "Ajoute une session pour voir les stats.";
+    }
+
+    // Records
+    if (!data.length){
+      $("kRecDist").textContent = "—";
+      $("kRecDist2").textContent = "";
+      $("kRecPace").textContent = "—";
+      $("kRecPace2").textContent = "";
+      return;
+    }
+
+    const bestDist = data.reduce((m,x)=> !m || x.totalMeters > m.totalMeters ? x : m, null);
+    $("kRecDist").textContent = `${bestDist.totalMeters} m`;
+    $("kRecDist2").textContent = bestDist.date ? `le ${bestDist.date}` : "";
+
+    const bestPace = data.reduce((m,x)=> {
+      const p = paceMinPer100m(x.totalMeters, x.minutes);
+      if (p == null) return m;
+      if (!m) return x;
+      const pm = paceMinPer100m(m.totalMeters, m.minutes);
+      return (pm == null || p < pm) ? x : m;
+    }, null);
+
+    if (bestPace){
+      $("kRecPace").textContent = formatPace(paceMinPer100m(bestPace.totalMeters, bestPace.minutes));
+      $("kRecPace2").textContent = bestPace.date ? `le ${bestPace.date} • ${bestPace.totalMeters} m` : "";
+    } else {
+      $("kRecPace").textContent = "—";
+      $("kRecPace2").textContent = "";
+    }
+  }
+
+  // ---- Monthly stats + charts
+  function monthKey(iso){
+    // YYYY-MM-DD => YYYY-MM
+    if (!iso || iso.length < 7) return "";
+    return iso.slice(0,7);
+  }
+
+  function buildMonthlyStats(data){
+    const map = new Map(); // YYYY-MM -> agg
+    for (const s of data){
+      const mk = monthKey(s.date);
+      if (!mk) continue;
+
+      if (!map.has(mk)){
+        map.set(mk, { month: mk, sessions: 0, totalMeters: 0, totalMinutes: 0, kcal: 0 });
+      }
+      const agg = map.get(mk);
+      agg.sessions += 1;
+      agg.totalMeters += Number(s.totalMeters) || 0;
+      agg.totalMinutes += Number(s.minutes) || 0;
+      agg.kcal += kcalFromMinutes(s.minutes);
+    }
+
+    // sort asc by month
+    return Array.from(map.values()).sort((a,b)=> (a.month||"").localeCompare(b.month||""));
+  }
+
+  function filterRange(arr){
+    const v = $("chartRange").value;
+    if (v === "all") return arr;
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return arr;
+    return arr.slice(Math.max(0, arr.length - n));
+  }
+
+  function renderMonthlyTable(months){
+    const tbody = $("tbodyMonths");
+    tbody.innerHTML = "";
+
+    if (!months.length){
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="6" class="muted">Ajoute des sessions pour voir les stats mensuelles.</td>`;
+      tbody.appendChild(tr);
+      return;
+    }
+
+    for (const m of months){
+      const pace = formatPace(paceMinPer100m(m.totalMeters, m.totalMinutes));
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${m.month}</td>
+        <td class="right">${m.sessions}</td>
+        <td class="right">${m.totalMeters} m <span class="muted">(${(m.totalMeters/1000).toFixed(2)} km)</span></td>
+        <td class="right">${m.totalMinutes.toFixed(1)} min</td>
+        <td class="right">${pace}</td>
+        <td class="right">${m.kcal ? m.kcal.toFixed(0) : "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Simple canvas charts (no external libs)
+  function drawBarChart(canvas, labels, values, opts={}){
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+    const H = canvas.height = 220 * (window.devicePixelRatio || 1);
+
+    ctx.clearRect(0,0,W,H);
+
+    const pad = 24 * (window.devicePixelRatio || 1);
+    const innerW = W - pad*2;
+    const innerH = H - pad*2;
+
+    // background
+    ctx.fillStyle = "rgba(255,255,255,0.00)";
+    ctx.fillRect(0,0,W,H);
+
+    const maxV = Math.max(1, ...values);
+    const n = Math.max(1, values.length);
+    const gap = innerW * 0.02;
+    const barW = Math.max(2, (innerW - gap*(n-1)) / n);
+
+    // axis
+    ctx.strokeStyle = "rgba(230,238,252,0.15)";
+    ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+    ctx.beginPath();
+    ctx.moveTo(pad, pad + innerH);
+    ctx.lineTo(pad + innerW, pad + innerH);
+    ctx.stroke();
+
+    // bars
+    for (let i=0;i<n;i++){
+      const v = values[i] || 0;
+      const h = (v / maxV) * innerH;
+      const x = pad + i*(barW+gap);
+      const y = pad + (innerH - h);
+
+      ctx.fillStyle = "rgba(79,124,255,0.85)";
+      ctx.fillRect(x, y, barW, h);
+    }
+
+    // labels (sparse)
+    ctx.fillStyle = "rgba(230,238,252,0.75)";
+    ctx.font = `${11 * (window.devicePixelRatio || 1)}px system-ui`;
+    const step = Math.ceil(n / 6);
+    for (let i=0;i<n;i+=step){
+      const text = labels[i] || "";
+      const x = pad + i*(barW+gap);
+      ctx.fillText(text, x, pad + innerH + (18 * (window.devicePixelRatio || 1)));
+    }
+  }
+
+  function drawLineChart(canvas, labels, values){
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+    const H = canvas.height = 220 * (window.devicePixelRatio || 1);
+
+    ctx.clearRect(0,0,W,H);
+
+    const pad = 24 * (window.devicePixelRatio || 1);
+    const innerW = W - pad*2;
+    const innerH = H - pad*2;
+
+    const clean = values.map(v => (Number.isFinite(v) ? v : null));
+    const finite = clean.filter(v => v != null);
+    const maxV = finite.length ? Math.max(...finite) : 1;
+    const minV = finite.length ? Math.min(...finite) : 0;
+
+    const n = Math.max(1, values.length);
+
+    // axis
+    ctx.strokeStyle = "rgba(230,238,252,0.15)";
+    ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+    ctx.beginPath();
+    ctx.moveTo(pad, pad + innerH);
+    ctx.lineTo(pad + innerW, pad + innerH);
+    ctx.stroke();
+
+    // line
+    ctx.strokeStyle = "rgba(79,124,255,0.95)";
+    ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+    ctx.beginPath();
+
+    let started = false;
+    for (let i=0;i<n;i++){
+      const v = clean[i];
+      if (v == null) continue;
+      const x = pad + (i/(n-1 || 1)) * innerW;
+      const norm = (v - minV) / ((maxV - minV) || 1);
+      const y = pad + (1 - norm) * innerH;
+
+      if (!started){
+        ctx.moveTo(x,y);
+        started = true;
+      } else {
+        ctx.lineTo(x,y);
+      }
+    }
+    ctx.stroke();
+
+    // points
+    for (let i=0;i<n;i++){
+      const v = clean[i];
+      if (v == null) continue;
+      const x = pad + (i/(n-1 || 1)) * innerW;
+      const norm = (v - minV) / ((maxV - minV) || 1);
+      const y = pad + (1 - norm) * innerH;
+
+      ctx.fillStyle = "rgba(79,124,255,1)";
+      ctx.beginPath();
+      ctx.arc(x,y, 3 * (window.devicePixelRatio || 1), 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // labels sparse
+    ctx.fillStyle = "rgba(230,238,252,0.75)";
+    ctx.font = `${11 * (window.devicePixelRatio || 1)}px system-ui`;
+    const step = Math.ceil(n / 6);
+    for (let i=0;i<n;i+=step){
+      const text = labels[i] || "";
+      const x = pad + (i/(n-1 || 1)) * innerW;
+      ctx.fillText(text, x, pad + innerH + (18 * (window.devicePixelRatio || 1)));
+    }
+  }
+
+  function renderMonthly(){
+    const data = load();
+    const allMonths = buildMonthlyStats(data);
+    const months = filterRange(allMonths);
+
+    renderMonthlyTable(months);
+
+    const labels = months.map(m => m.month.slice(5)); // "MM" for compact axis
+    const km = months.map(m => +(m.totalMeters/1000).toFixed(2));
+    const paceVals = months.map(m => paceMinPer100m(m.totalMeters, m.totalMinutes)); // minutes/100m
+
+    drawBarChart($("chartMonthly"), labels, km);
+    drawLineChart($("chartPace"), labels, paceVals);
+
+    if (!months.length){
+      $("chartMonthlyNote").textContent = "Ajoute des sessions pour voir le graphique.";
+      $("chartPaceNote").textContent = "";
+    } else {
+      const totalKm = km.reduce((s,v)=>s+v,0);
+      $("chartMonthlyNote").textContent = `Total sur la période: ${totalKm.toFixed(2)} km`;
+      const last = months[months.length-1];
+      const lastPace = formatPace(paceMinPer100m(last.totalMeters, last.totalMinutes));
+      $("chartPaceNote").textContent = `Dernier mois (${last.month}) : allure moy. ${lastPace}`;
+    }
+  }
+
+  function forceUpdate(){
+    // Re-détecte la clé active + recalcul tout + resauvegarde normalisé
+    ACTIVE_KEY = findActiveKey();
+    $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
+    computeHistoryKpisAndRecords();
+    renderMonthly();
+    renderSessions();
+    setMsg("", "✅ Stats recalculées (historique relu).");
+  }
+
+  function renderAll(){
+    $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
+    computeHistoryKpisAndRecords();
+    renderMonthly();
+    renderSessions();
+  }
+
+  // Init
+  ACTIVE_KEY = findActiveKey();
+  $("date").value = todayISO();
+  $("poolLen").value = 25;
+  $("weightKg").value = 78;
+
+  $("addBtn").addEventListener("click", addSession);
+  $("forceBtn").addEventListener("click", forceUpdate);
+  $("clearInputsBtn").addEventListener("click", clearInputs);
+  $("exportBtn").addEventListener("click", exportJSON);
+  $("importBtn").addEventListener("click", importJSON);
+  $("wipeBtn").addEventListener("click", wipeAll);
+
+  $("sort").addEventListener("change", renderSessions);
+  $("chartRange").addEventListener("change", renderMonthly);
+
+  // Recalcul kcal + stats quand poids/intensité changent
+  $("weightKg").addEventListener("input", renderAll);
+  $("intensity").addEventListener("change", renderAll);
+
+  // ✅ premier rendu
+  renderAll();
+
+  // ✅ re-dessine les canvas si rotation / resize
+  window.addEventListener("resize", () => {
+    renderMonthly();
+  });
 </script>
 
 <script>
-if("serviceWorker"in navigator){
-navigator.serviceWorker.register("./sw.js")
-}
-</script>
+  // ✅ Service Worker registration + auto update
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("./sw.js");
 
+        reg.addEventListener("updatefound", () => {
+          const newWorker = reg.installing;
+          if (!newWorker) return;
+
+          newWorker.addEventListener("statechange", () => {
+            if (newWorker.state === "installed") {
+              if (navigator.serviceWorker.controller) {
+                newWorker.postMessage({ type: "SKIP_WAITING" });
+              }
+            }
+          });
+        });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      } catch (e) {
+        console.log("SW register failed", e);
+      }
+    });
+  }
+</script>
 </body>
 </html>
