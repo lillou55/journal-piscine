@@ -868,6 +868,22 @@ input[type="date"]{
       }
     });
   }
+  
+async function getSwVersion(){
+  if (!navigator.serviceWorker?.controller) return null;
+
+  return new Promise((resolve) => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = (e) => resolve(e.data);
+    navigator.serviceWorker.controller.postMessage(
+      { type: "GET_VERSION" },
+      [ch.port2]
+    );
+  });
+}
+
+getSwVersion().then(v => console.log("SW ACTIF:", v));
+
 </script>
 
 </body>
