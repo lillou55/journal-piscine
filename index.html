@@ -54,6 +54,7 @@
     .muted { opacity:.8; }
     details summary { cursor:pointer; user-select:none; }
     .chiprow { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .subnote { font-size:12px; opacity:.85; margin-top:6px; }
   </style>
 </head>
 <body>
@@ -96,28 +97,37 @@
         </div>
 
         <div class="col-12">
+          <div class="inline">
+            <div class="pill">📊 Stats de l’historique</div>
+            <div style="flex:1"></div>
+            <div class="muted" style="font-size:12px;">(moyennes pondérées par la distance)</div>
+          </div>
+
           <div class="kpis">
             <div class="kpi">
-              <div class="t">Distance</div>
+              <div class="t">Distance totale</div>
               <div class="v" id="kDistance">—</div>
               <div class="muted" style="font-size:12px" id="kDistance2"></div>
             </div>
             <div class="kpi">
-              <div class="t">Allure</div>
+              <div class="t">Allure moyenne</div>
               <div class="v" id="kPace">—</div>
               <div class="muted" style="font-size:12px">min / 100 m</div>
             </div>
             <div class="kpi">
-              <div class="t">Vitesse</div>
+              <div class="t">Vitesse moyenne</div>
               <div class="v" id="kSpeed">—</div>
               <div class="muted" style="font-size:12px">km/h</div>
             </div>
             <div class="kpi">
-              <div class="t">Cadence</div>
+              <div class="t">Cadence moyenne</div>
               <div class="v" id="kRate">—</div>
               <div class="muted" style="font-size:12px">m/min</div>
             </div>
           </div>
+
+          <div class="subnote muted" id="kMeta"></div>
+
           <div class="error" id="msg"></div>
           <div class="success" id="msgOk"></div>
         </div>
@@ -256,37 +266,44 @@
     $("msgOk").textContent = ok;
   }
 
-  function computeLiveKpis(){
-    const poolLen = Number($("poolLen").value);
-    const laps = Number($("laps").value);
-    const mins = Number($("minutes").value);
-    const dist = meters(laps, poolLen);
+  // ✅ KPIs basés sur l’historique (toutes les sessions)
+  function computeHistoryKpis(){
+    const data = load();
 
-    $("kDistance").textContent = dist > 0 ? `${dist} m` : "—";
-    $("kDistance2").textContent = dist > 0 ? `${(dist/1000).toFixed(2)} km` : "";
+    const totalMeters = data.reduce((s,x)=>s+(Number(x.totalMeters)||0),0);
+    const totalMinutes = data.reduce((s,x)=>s+(Number(x.minutes)||0),0);
 
-    const pace = paceMinPer100m(dist, mins);
-    $("kPace").textContent = formatPace(pace);
+    $("kDistance").textContent = totalMeters > 0 ? `${totalMeters} m` : "—";
+    $("kDistance2").textContent = totalMeters > 0 ? `${(totalMeters/1000).toFixed(2)} km` : "";
 
-    const sp = speedKmh(dist, mins);
+    // Allure / vitesse / cadence moyennes pondérées par la distance
+    $("kPace").textContent = formatPace(paceMinPer100m(totalMeters, totalMinutes));
+
+    const sp = speedKmh(totalMeters, totalMinutes);
     $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
 
-    const r = rateMPerMin(dist, mins);
+    const r = rateMPerMin(totalMeters, totalMinutes);
     $("kRate").textContent = r == null ? "—" : r.toFixed(1);
+
+    if (data.length === 0){
+      $("kMeta").textContent = "Ajoute une session pour voir les stats de l’historique.";
+      return;
+    }
+
+    const firstDate = data.map(x=>x.date).filter(Boolean).sort()[0];
+    const lastDate = data.map(x=>x.date).filter(Boolean).sort().slice(-1)[0];
+    $("kMeta").textContent = `Sessions: ${data.length} • Temps total: ${totalMinutes.toFixed(1)} min • Période: ${firstDate || "—"} → ${lastDate || "—"}`;
   }
 
   // --- ISO WEEK helpers (semaine ISO : lundi->dimanche) ---
   function parseISODate(iso){
-    // iso: YYYY-MM-DD
     const [y,m,d] = (iso||"").split("-").map(Number);
     if (!y || !m || !d) return null;
     return new Date(y, m-1, d);
   }
 
   function getISOWeekInfo(date){
-    // returns {year, week, weekKey, weekStartISO}
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    // Thursday in current week decides the year.
     const dayNum = d.getUTCDay() || 7; // 1..7 (Mon..Sun)
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -348,7 +365,6 @@
     $("laps").value = "";
     $("minutes").value = "";
     $("note").value = "";
-    computeLiveKpis();
     setMsg("", "");
   }
 
@@ -428,7 +444,6 @@
       agg.totalMinutes += Number(s.minutes) || 0;
     }
 
-    // to array sorted by weekStart desc
     const arr = Array.from(map.values()).sort((a,b) => (b.weekStartISO||"").localeCompare(a.weekStartISO||""));
     return arr;
   }
@@ -440,7 +455,6 @@
     const n = Number(v);
     if (!Number.isFinite(n) || n <= 0) return weeklyArr;
 
-    // Keep last N weeks based on entries order (already desc)
     return weeklyArr.slice(0, n);
   }
 
@@ -449,7 +463,6 @@
     const weeklyAll = buildWeeklyStats(sessions);
     const weekly = filterWeeklyRange(weeklyAll);
 
-    // headline stats
     const totalMeters = weekly.reduce((s,x)=>s+x.totalMeters,0);
     const best = weekly.reduce((m,x)=>!m || x.totalMeters > m.totalMeters ? x : m, null);
     const avg = weekly.length ? (totalMeters / weekly.length) : 0;
@@ -462,12 +475,11 @@
       ? `Moyenne/semaine: ${(avg/1000).toFixed(2)} km`
       : "Moyenne/semaine: —";
 
-    // table
     const tbody = $("tbodyWeeks");
     tbody.innerHTML = "";
 
     for (const w of weekly){
-      const pace = formatPace(paceMinPer100m(w.totalMeters, w.totalMinutes)); // weighted by distance
+      const pace = formatPace(paceMinPer100m(w.totalMeters, w.totalMinutes));
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${w.weekKey} <span class="muted" style="font-size:12px;">(déb. ${w.weekStartISO})</span></td>
@@ -529,14 +541,14 @@
   function renderAll(){
     renderWeekly();
     renderSessions();
-    computeLiveKpis();
+    computeHistoryKpis(); // ✅ affichage des KPIs à partir des sessions enregistrées
   }
 
   // Init
   $("date").value = todayISO();
   $("poolLen").value = 25;
 
-  ["poolLen","laps","minutes"].forEach(id => $(id).addEventListener("input", computeLiveKpis));
+  // Les champs servent juste à saisir une session, pas à afficher les stats principales
   $("sort").addEventListener("change", renderSessions);
   $("weekRange").addEventListener("change", renderWeekly);
 
