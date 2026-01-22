@@ -1,0 +1,29 @@
+name: Inject build id
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: write
+
+jobs:
+  inject:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute build id
+        run: echo "BUILD=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Inject build id into files
+        run: |
+          sed -i "s/__BUILD__/${BUILD}/g" index.html sw.js
+
+      - name: Commit injected build
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add index.html sw.js
+          git commit -m "chore: build ${BUILD}" || exit 0
+          git push
