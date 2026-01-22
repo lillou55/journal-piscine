@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-build="__BUILD__">
+<html lang="fr" data-build="a6e6a11">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -84,10 +84,10 @@
     <h1>🏊 Journal Piscine</h1>
 
     <!-- ✅ Point B: version injectée automatiquement -->
-    <div class="pill" id="uiBuildPill" style="margin-bottom:10px;">Version: __BUILD__</div>
+    <div class="pill" id="uiBuildPill" style="margin-bottom:10px;">Version: a6e6a11</div>
     <script>
-      window.__BUILD__ = "__BUILD__";
-      document.documentElement.setAttribute("data-build", window.__BUILD__);
+      window.a6e6a11 = "a6e6a11";
+      document.documentElement.setAttribute("data-build", window.a6e6a11);
     </script>
 
     <!-- Badges live HTML/SW -->
@@ -834,7 +834,7 @@
       const htmlPill = document.getElementById("uiHtmlBuild");
       const statePill = document.getElementById("uiSwState");
 
-      const htmlBuild = window.__BUILD__ || document.documentElement.getAttribute("data-build") || "—";
+      const htmlBuild = window.a6e6a11 || document.documentElement.getAttribute("data-build") || "—";
 
       if (htmlPill) {
         htmlPill.textContent = `HTML: ${htmlBuild}`;
