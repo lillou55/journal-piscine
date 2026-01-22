@@ -79,6 +79,12 @@ input[type="date"]{
   -webkit-appearance: none;
   appearance: none;
 }
+
+.pill.ok { border-color:#2ecc71; }
+.pill.warn { border-color:#f1c40f; }
+.pill.bad { border-color:#ff4f6a; }
+
+
   </style>
 </head>
 
@@ -88,6 +94,12 @@ input[type="date"]{
 
     <!-- ✅ Badge version pour vérifier que tu as bien le dernier index.html -->
     <div class="pill" style="margin-bottom:10px;">Version: INDEX-v8</div>
+
+<div class="inline" style="gap:8px; margin:10px 0;">
+  <div class="pill" id="uiHtmlBuild">HTML: —</div>
+  <div class="pill" id="uiSwBuild">SW actif: —</div>
+  <div class="pill muted" id="uiSwState" style="display:none;">SW: update…</div>
+</div>
 
     <!-- FORM + HISTO KPIS -->
     <div class="card">
@@ -834,6 +846,65 @@ input[type="date"]{
 
   renderAll();
   window.addEventListener("resize", renderMonthly);
+
+// --- SW Debug: affiche la version SW active dans l'UI ---
+async function getSwVersion(){
+  if (!navigator.serviceWorker?.controller) return null;
+
+  return new Promise((resolve) => {
+    const ch = new MessageChannel();
+    ch.port1.onmessage = (e) => resolve(e.data);
+    navigator.serviceWorker.controller.postMessage(
+      { type: "GET_VERSION" },
+      [ch.port2]
+    );
+  });
+}
+
+async function refreshUiSwBadges(){
+  const swPill = document.getElementById("uiSwBuild");
+  const htmlPill = document.getElementById("uiHtmlBuild");
+  const statePill = document.getElementById("uiSwState");
+
+  // HTML build (si tu le fournis via meta / variable globale)
+  const htmlBuild = window.__BUILD__ || document.documentElement.getAttribute("data-build") || "—";
+  if (htmlPill) {
+    htmlPill.textContent = `HTML: ${htmlBuild}`;
+    htmlPill.classList.add("ok");
+  }
+
+  // SW build
+  const info = await getSwVersion();
+  if (!swPill) return;
+
+  if (!info) {
+    swPill.textContent = "SW actif: (aucun)";
+    swPill.className = "pill warn";
+    return;
+  }
+
+  swPill.textContent = `SW actif: ${info.build}`;
+  swPill.className = "pill ok";
+
+  // Compare HTML build vs SW build si dispo
+  if (htmlBuild !== "—" && info.build !== htmlBuild) {
+    swPill.className = "pill warn";
+  }
+
+  // Affiche si un update arrive
+  if (statePill) statePill.style.display = "none";
+}
+
+// Met à jour au chargement + quand le SW change
+window.addEventListener("load", () => {
+  refreshUiSwBadges();
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      refreshUiSwBadges();
+    });
+  }
+});
 </script>
 
 <script>
