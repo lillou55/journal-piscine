@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-build="__BUILD__">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -13,7 +13,7 @@
 
   <style>
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    body { margin: 0; background: #0b1220; color: #e6eefc; }
+    body { margin: 0; background: #0b1220; color: #e6eefc; overflow-x:hidden; }
     .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
     h1 { margin: 0 0 14px; font-size: 22px; }
     .card { background: #121b2e; border: 1px solid #233055; border-radius: 14px; padding: 16px; margin-top: 14px; }
@@ -26,9 +26,14 @@
       .wrap{ padding: 14px; }
     }
 
+    /* ✅ Fix iOS overflow grid/input */
+    .grid > div { min-width: 0; }
+    input[type="date"] { min-width: 0; -webkit-appearance: none; appearance: none; }
+
     label { display:block; font-size: 12px; opacity: .9; margin-bottom: 6px; }
     input, button, select {
-      width: 100%; box-sizing: border-box;
+      width: 100%; max-width: 100%;
+      box-sizing: border-box;
       background: #0c1427; color: #e6eefc;
       border: 1px solid #26365f; border-radius: 12px;
       padding: 12px; outline: none;
@@ -54,7 +59,7 @@
     .error { color: #ffb4bf; margin-top: 8px; }
     .success { color: #b7ffd2; margin-top: 8px; }
 
-    /* ✅ Tables responsive (plus “trop large”) */
+    /* ✅ Tables responsive */
     .tablewrap { overflow-x: auto; border-radius: 12px; border: 1px solid #26365f; }
     table { width: 100%; border-collapse: collapse; min-width: 680px; }
     th, td { padding: 10px; border-bottom: 1px solid #243356; text-align: left; font-size: 13px; white-space: nowrap; }
@@ -66,25 +71,11 @@
     .chartBox { background: #0c1427; border: 1px solid #26365f; border-radius: 12px; padding: 12px; }
     canvas { width: 100%; height: 220px; display:block; }
     .small { font-size: 12px; opacity:.85; }
-  
-  /* ✅ Fix iOS : input date qui déborde */
-.grid > div { min-width: 0; }           /* autorise le shrink dans CSS grid */
-input[type="date"] { min-width: 0; }    /* évite le min-width implicite iOS */
-input, select, button { max-width: 100%; }
 
-/* sécurité anti-overflow */
-body { overflow-x: hidden; }
-
-input[type="date"]{
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.pill.ok { border-color:#2ecc71; }
-.pill.warn { border-color:#f1c40f; }
-.pill.bad { border-color:#ff4f6a; }
-
-
+    /* Badges status */
+    .pill.ok { border-color:#2ecc71; }
+    .pill.warn { border-color:#f1c40f; }
+    .pill.bad { border-color:#ff4f6a; }
   </style>
 </head>
 
@@ -92,14 +83,19 @@ input[type="date"]{
   <div class="wrap">
     <h1>🏊 Journal Piscine</h1>
 
-    <!-- ✅ Badge version pour vérifier que tu as bien le dernier index.html -->
-    <div class="pill" style="margin-bottom:10px;">Version: INDEX-v8</div>
+    <!-- ✅ Point B: version injectée automatiquement -->
+    <div class="pill" id="uiBuildPill" style="margin-bottom:10px;">Version: __BUILD__</div>
+    <script>
+      window.__BUILD__ = "__BUILD__";
+      document.documentElement.setAttribute("data-build", window.__BUILD__);
+    </script>
 
-<div class="inline" style="gap:8px; margin:10px 0;">
-  <div class="pill" id="uiHtmlBuild">HTML: —</div>
-  <div class="pill" id="uiSwBuild">SW actif: —</div>
-  <div class="pill muted" id="uiSwState" style="display:none;">SW: update…</div>
-</div>
+    <!-- Badges live HTML/SW -->
+    <div class="inline" style="gap:8px; margin:10px 0;">
+      <div class="pill" id="uiHtmlBuild">HTML: —</div>
+      <div class="pill" id="uiSwBuild">SW actif: —</div>
+      <div class="pill muted" id="uiSwState" style="display:none;">SW: update…</div>
+    </div>
 
     <!-- FORM + HISTO KPIS -->
     <div class="card">
@@ -145,7 +141,7 @@ input[type="date"]{
         </div>
 
         <div class="col-12 row">
-          <button class="btn" id="addBtn">Ajouter la session</button>
+          <button class="btn" id="addBtn" type="button">Ajouter la session</button>
           <button class="btn2" id="forceBtn" type="button">Forcer la mise à jour des stats</button>
           <button class="btn2" id="clearInputsBtn" type="button">Vider le formulaire</button>
           <button class="btn2" id="exportBtn" type="button">Exporter JSON</button>
@@ -305,657 +301,636 @@ input[type="date"]{
     </div>
   </div>
 
-<script>
-  const $ = (id) => document.getElementById(id);
+  <!-- =========================
+       SCRIPT PRINCIPAL APP
+  ========================== -->
+  <script>
+    const $ = (id) => document.getElementById(id);
 
-  // ✅ support migration / anciennes versions
-  const STORAGE_KEYS = ["swim_sessions_v1", "swim_sessions", "sessions_piscine"];
-  let ACTIVE_KEY = null;
+    // ✅ support migration / anciennes versions
+    const STORAGE_KEYS = ["swim_sessions_v1", "swim_sessions", "sessions_piscine"];
+    let ACTIVE_KEY = null;
 
-  function todayISO(){
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth()+1).padStart(2,"0");
-    const dd = String(d.getDate()).padStart(2,"0");
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function meters(laps, poolLen){
-    return (Number(laps) || 0) * (Number(poolLen) || 0);
-  }
-
-  function paceMinPer100m(totalMeters, minutes){
-    const m = Number(totalMeters);
-    const t = Number(minutes);
-    if (m <= 0 || t <= 0) return null;
-    return t / (m / 100);
-  }
-
-  function formatPace(minPer100){
-    if (minPer100 == null) return "—";
-    const totalSeconds = Math.round(minPer100 * 60);
-    const mm = Math.floor(totalSeconds / 60);
-    const ss = String(totalSeconds % 60).padStart(2,"0");
-    return `${mm}:${ss}`;
-  }
-
-  function speedKmh(totalMeters, minutes){
-    const m = Number(totalMeters);
-    const t = Number(minutes);
-    if (m <= 0 || t <= 0) return null;
-    return (m / 1000) / (t / 60);
-  }
-
-  function rateMPerMin(totalMeters, minutes){
-    const m = Number(totalMeters);
-    const t = Number(minutes);
-    if (m <= 0 || t <= 0) return null;
-    return m / t;
-  }
-
-  // kcal estimation (MET × kg × hours)
-  function kcalFromMinutes(minutes){
-    const met = Number($("intensity").value) || 8;
-    const kg = Number($("weightKg").value) || 70;
-    const hours = (Number(minutes) || 0) / 60;
-    if (hours <= 0) return 0;
-    return met * kg * hours;
-  }
-
-  function setMsg(err="", ok=""){
-    $("msg").textContent = err;
-    $("msgOk").textContent = ok;
-  }
-
-  function findActiveKey(){
-    for (const k of STORAGE_KEYS){
-      const raw = localStorage.getItem(k);
-      if (!raw) continue;
-      try {
-        const arr = JSON.parse(raw);
-        if (Array.isArray(arr) && arr.length) return k;
-      } catch {}
+    function todayISO(){
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${yyyy}-${mm}-${dd}`;
     }
-    return STORAGE_KEYS[0];
-  }
 
-  function normalizeSession(x){
-    const poolLen = Number(x.poolLen) || 0;
-    const laps = Number(x.laps) || 0;
-    const minutes = Number(x.minutes) || 0;
-
-    const tm = Number(x.totalMeters);
-    const totalMeters = (Number.isFinite(tm) && tm > 0) ? tm : meters(laps, poolLen);
-
-    return {
-      id: x.id || (Math.random().toString(16).slice(2) + Date.now().toString(16)),
-      date: (x.date || "").toString(),
-      poolLen,
-      laps,
-      minutes,
-      totalMeters,
-      note: (x.note || "").toString()
-    };
-  }
-
-  function load(){
-    try {
-      const raw = localStorage.getItem(ACTIVE_KEY) || "[]";
-      const arr = JSON.parse(raw);
-      if (!Array.isArray(arr)) return [];
-      // On garde même les “vieux” enregistrements, on les normalise
-      return arr.map(normalizeSession);
-    } catch {
-      return [];
+    function meters(laps, poolLen){
+      return (Number(laps) || 0) * (Number(poolLen) || 0);
     }
-  }
 
-  function save(data){
-    localStorage.setItem(ACTIVE_KEY, JSON.stringify(data));
-  }
+    function paceMinPer100m(totalMeters, minutes){
+      const m = Number(totalMeters);
+      const t = Number(minutes);
+      if (m <= 0 || t <= 0) return null;
+      return t / (m / 100);
+    }
 
-  function uuid(){
-    return Math.random().toString(16).slice(2) + Date.now().toString(16);
-  }
+    function formatPace(minPer100){
+      if (minPer100 == null) return "—";
+      const totalSeconds = Math.round(minPer100 * 60);
+      const mm = Math.floor(totalSeconds / 60);
+      const ss = String(totalSeconds % 60).padStart(2,"0");
+      return `${mm}:${ss}`;
+    }
 
-  function addSession(){
-    setMsg("", "");
-    const date = $("date").value || todayISO();
-    const poolLen = Number($("poolLen").value);
-    const laps = Number($("laps").value);
-    const minutes = Number($("minutes").value);
-    const note = ($("note").value || "").trim();
+    function speedKmh(totalMeters, minutes){
+      const m = Number(totalMeters);
+      const t = Number(minutes);
+      if (m <= 0 || t <= 0) return null;
+      return (m / 1000) / (t / 60);
+    }
 
-    if (!poolLen || poolLen <= 0) return setMsg("👉 Indique la taille d’une longueur (en mètres).");
-    if (!Number.isFinite(laps) || laps < 0) return setMsg("👉 Le nombre de longueurs doit être ≥ 0.");
-    if (!minutes || minutes <= 0) return setMsg("👉 Indique le temps de session (en minutes).");
+    function rateMPerMin(totalMeters, minutes){
+      const m = Number(totalMeters);
+      const t = Number(minutes);
+      if (m <= 0 || t <= 0) return null;
+      return m / t;
+    }
 
-    const totalMeters = meters(laps, poolLen);
-    const session = { id: uuid(), date, poolLen, laps, minutes, totalMeters, note };
+    // kcal estimation (MET × kg × hours)
+    function kcalFromMinutes(minutes){
+      const met = Number($("intensity")?.value) || 8;
+      const kg = Number($("weightKg")?.value) || 70;
+      const hours = (Number(minutes) || 0) / 60;
+      if (hours <= 0) return 0;
+      return met * kg * hours;
+    }
 
-    const data = load().filter(s => s.poolLen > 0 && s.minutes > 0); // nettoie éventuels vieux invalides
-    data.push(session);
-    save(data);
+    function setMsg(err="", ok=""){
+      $("msg").textContent = err;
+      $("msgOk").textContent = ok;
+    }
 
-    setMsg("", "✅ Session ajoutée !");
-    renderAll();
-  }
-
-  function clearInputs(){
-    $("laps").value = "";
-    $("minutes").value = "";
-    $("note").value = "";
-    setMsg("", "");
-  }
-
-  function exportJSON(){
-    const data = load();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "sessions_piscine.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function importJSON(){
-    const inp = document.createElement("input");
-    inp.type = "file";
-    inp.accept = "application/json";
-    inp.onchange = async () => {
-      const file = inp.files?.[0];
-      if (!file) return;
-      try {
-        const text = await file.text();
-        const parsed = JSON.parse(text);
-        if (!Array.isArray(parsed)) throw new Error("Format invalide (tableau attendu).");
-
-        const clean = parsed
-          .filter(x => x && typeof x === "object")
-          .map(normalizeSession)
-          .filter(s => s.poolLen > 0 && s.minutes > 0);
-
-        save(clean);
-        renderAll();
-        setMsg("", "✅ Import effectué !");
-      } catch (e){
-        setMsg("❌ Import impossible : " + (e?.message || e));
+    function findActiveKey(){
+      for (const k of STORAGE_KEYS){
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr) && arr.length) return k;
+        } catch {}
       }
-    };
-    inp.click();
-  }
+      return STORAGE_KEYS[0];
+    }
 
-  function wipeAll(){
-    if (!confirm("Tout effacer ? (irréversible)")) return;
-    localStorage.removeItem(ACTIVE_KEY);
-    renderAll();
-    setMsg("", "✅ Historique effacé.");
-  }
+    function normalizeSession(x){
+      const poolLen = Number(x.poolLen) || 0;
+      const laps = Number(x.laps) || 0;
+      const minutes = Number(x.minutes) || 0;
 
-  // ---- Sort + render sessions
-  function sortSessions(data){
-    const mode = $("sort").value;
-    const copy = [...data].filter(s => s.poolLen > 0 && s.minutes > 0);
-    copy.sort((a,b) => {
-      if (mode === "date_desc") return (b.date||"").localeCompare(a.date||"");
-      if (mode === "date_asc") return (a.date||"").localeCompare(b.date||"");
-      if (mode === "dist_desc") return (b.totalMeters||0) - (a.totalMeters||0);
-      if (mode === "time_desc") return (b.minutes||0) - (a.minutes||0);
-      if (mode === "pace_asc") {
-        const pa = paceMinPer100m(a.totalMeters, a.minutes);
-        const pb = paceMinPer100m(b.totalMeters, b.minutes);
-        if (pa == null && pb == null) return 0;
-        if (pa == null) return 1;
-        if (pb == null) return -1;
-        return pa - pb;
-      }
-      return 0;
-    });
-    return copy;
-  }
+      const tm = Number(x.totalMeters);
+      const totalMeters = (Number.isFinite(tm) && tm > 0) ? tm : meters(laps, poolLen);
 
-  function renderSessions(){
-    const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
-    const sorted = sortSessions(data);
-
-    const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
-    $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
-    $("sumPill").textContent = `Total: ${total} m`;
-
-    const tbody = $("tbody");
-    tbody.innerHTML = "";
-
-    for (const s of sorted){
-      const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
-      const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
-      const kcal = kcalFromMinutes(s.minutes);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${s.date || "—"}</td>
-        <td title="${details.replaceAll('"','&quot;')}">${details}</td>
-        <td class="right">${s.totalMeters} m</td>
-        <td class="right">${Number(s.minutes).toFixed(1)} min</td>
-        <td class="right">${pace}</td>
-        <td class="right">${kcal ? kcal.toFixed(0) : "—"}</td>
-        <td class="right"></td>
-      `;
-
-      const btn = document.createElement("button");
-      btn.textContent = "Supprimer";
-      btn.className = "btn2";
-      btn.style.width = "auto";
-      btn.onclick = () => {
-        save(load().filter(x => x.id !== s.id));
-        renderAll();
+      return {
+        id: x.id || (Math.random().toString(16).slice(2) + Date.now().toString(16)),
+        date: (x.date || "").toString(),
+        poolLen,
+        laps,
+        minutes,
+        totalMeters,
+        note: (x.note || "").toString()
       };
-      tr.lastElementChild.appendChild(btn);
-
-      tbody.appendChild(tr);
-    }
-  }
-
-  // ---- History KPIs + records
-  function computeHistoryKpisAndRecords(){
-    // Normalise + resauvegarde pour rendre l’historique compatible
-    const data = load().map(normalizeSession).filter(s => s.poolLen > 0 && s.minutes > 0);
-    save(data);
-
-    const totalMeters = data.reduce((s,x)=>s+(Number(x.totalMeters)||0),0);
-    const totalMinutes = data.reduce((s,x)=>s+(Number(x.minutes)||0),0);
-
-    $("kDistance").textContent = totalMeters > 0 ? `${totalMeters} m` : "—";
-    $("kDistance2").textContent = totalMeters > 0 ? `${(totalMeters/1000).toFixed(2)} km` : "";
-
-    $("kTime").textContent = totalMinutes > 0 ? `${totalMinutes.toFixed(1)} min` : "—";
-    $("kPace").textContent = formatPace(paceMinPer100m(totalMeters, totalMinutes));
-
-    const sp = speedKmh(totalMeters, totalMinutes);
-    $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
-
-    const r = rateMPerMin(totalMeters, totalMinutes);
-    $("kRate").textContent = r == null ? "—" : r.toFixed(1);
-
-    const totalKcal = data.reduce((s,x)=>s + kcalFromMinutes(x.minutes), 0);
-    $("kKcal").textContent = data.length ? `${totalKcal.toFixed(0)}` : "—";
-
-    const dates = data.map(x=>x.date).filter(Boolean).sort();
-    $("kPeriod").textContent = dates.length
-      ? `Période: ${dates[0]} → ${dates[dates.length-1]} • ${data.length} sessions`
-      : "Ajoute une session pour voir les stats.";
-
-    // Records
-    if (!data.length){
-      $("kRecDist").textContent = "—";
-      $("kRecDist2").textContent = "";
-      $("kRecPace").textContent = "—";
-      $("kRecPace2").textContent = "";
-      return;
     }
 
-    const bestDist = data.reduce((m,x)=> !m || x.totalMeters > m.totalMeters ? x : m, null);
-    $("kRecDist").textContent = `${bestDist.totalMeters} m`;
-    $("kRecDist2").textContent = bestDist.date ? `le ${bestDist.date}` : "";
-
-    const bestPace = data.reduce((m,x)=> {
-      const p = paceMinPer100m(x.totalMeters, x.minutes);
-      if (p == null) return m;
-      if (!m) return x;
-      const pm = paceMinPer100m(m.totalMeters, m.minutes);
-      return (pm == null || p < pm) ? x : m;
-    }, null);
-
-    if (bestPace){
-      $("kRecPace").textContent = formatPace(paceMinPer100m(bestPace.totalMeters, bestPace.minutes));
-      $("kRecPace2").textContent = bestPace.date ? `le ${bestPace.date} • ${bestPace.totalMeters} m` : "";
-    } else {
-      $("kRecPace").textContent = "—";
-      $("kRecPace2").textContent = "";
-    }
-  }
-
-  // ---- Monthly stats + charts
-  function monthKey(iso){
-    if (!iso || iso.length < 7) return "";
-    return iso.slice(0,7);
-  }
-
-  function buildMonthlyStats(data){
-    const map = new Map();
-    for (const s of data){
-      const mk = monthKey(s.date);
-      if (!mk) continue;
-
-      if (!map.has(mk)){
-        map.set(mk, { month: mk, sessions: 0, totalMeters: 0, totalMinutes: 0, kcal: 0 });
-      }
-      const agg = map.get(mk);
-      agg.sessions += 1;
-      agg.totalMeters += Number(s.totalMeters) || 0;
-      agg.totalMinutes += Number(s.minutes) || 0;
-      agg.kcal += kcalFromMinutes(s.minutes);
-    }
-    return Array.from(map.values()).sort((a,b)=> (a.month||"").localeCompare(b.month||""));
-  }
-
-  function filterRange(arr){
-    const v = $("chartRange").value;
-    if (v === "all") return arr;
-    const n = Number(v);
-    if (!Number.isFinite(n) || n <= 0) return arr;
-    return arr.slice(Math.max(0, arr.length - n));
-  }
-
-  function renderMonthlyTable(months){
-    const tbody = $("tbodyMonths");
-    tbody.innerHTML = "";
-
-    if (!months.length){
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td colspan="6" class="muted">Ajoute des sessions pour voir les stats mensuelles.</td>`;
-      tbody.appendChild(tr);
-      return;
-    }
-
-    for (const m of months){
-      const pace = formatPace(paceMinPer100m(m.totalMeters, m.totalMinutes));
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${m.month}</td>
-        <td class="right">${m.sessions}</td>
-        <td class="right">${m.totalMeters} m <span class="muted">(${(m.totalMeters/1000).toFixed(2)} km)</span></td>
-        <td class="right">${m.totalMinutes.toFixed(1)} min</td>
-        <td class="right">${pace}</td>
-        <td class="right">${m.kcal ? m.kcal.toFixed(0) : "—"}</td>
-      `;
-      tbody.appendChild(tr);
-    }
-  }
-
-  // Simple canvas charts (no external libs)
-  function drawBarChart(canvas, labels, values){
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-    canvas.height = Math.max(1, Math.floor(220 * dpr));
-
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
-
-    const pad = 24 * dpr;
-    const innerW = W - pad*2;
-    const innerH = H - pad*2;
-
-    const maxV = Math.max(1, ...values);
-    const n = Math.max(1, values.length);
-    const gap = innerW * 0.02;
-    const barW = Math.max(2, (innerW - gap*(n-1)) / n);
-
-    ctx.strokeStyle = "rgba(230,238,252,0.15)";
-    ctx.lineWidth = 1 * dpr;
-    ctx.beginPath();
-    ctx.moveTo(pad, pad + innerH);
-    ctx.lineTo(pad + innerW, pad + innerH);
-    ctx.stroke();
-
-    for (let i=0;i<n;i++){
-      const v = values[i] || 0;
-      const h = (v / maxV) * innerH;
-      const x = pad + i*(barW+gap);
-      const y = pad + (innerH - h);
-      ctx.fillStyle = "rgba(79,124,255,0.85)";
-      ctx.fillRect(x, y, barW, h);
-    }
-
-    ctx.fillStyle = "rgba(230,238,252,0.75)";
-    ctx.font = `${11 * dpr}px system-ui`;
-    const step = Math.ceil(n / 6);
-    for (let i=0;i<n;i+=step){
-      const text = labels[i] || "";
-      const x = pad + i*(barW+gap);
-      ctx.fillText(text, x, pad + innerH + (18 * dpr));
-    }
-  }
-
-  function drawLineChart(canvas, labels, values){
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
-    canvas.height = Math.max(1, Math.floor(220 * dpr));
-
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0,0,W,H);
-
-    const pad = 24 * dpr;
-    const innerW = W - pad*2;
-    const innerH = H - pad*2;
-
-    const clean = values.map(v => (Number.isFinite(v) ? v : null));
-    const finite = clean.filter(v => v != null);
-    const maxV = finite.length ? Math.max(...finite) : 1;
-    const minV = finite.length ? Math.min(...finite) : 0;
-
-    const n = Math.max(1, values.length);
-
-    ctx.strokeStyle = "rgba(230,238,252,0.15)";
-    ctx.lineWidth = 1 * dpr;
-    ctx.beginPath();
-    ctx.moveTo(pad, pad + innerH);
-    ctx.lineTo(pad + innerW, pad + innerH);
-    ctx.stroke();
-
-    ctx.strokeStyle = "rgba(79,124,255,0.95)";
-    ctx.lineWidth = 2 * dpr;
-    ctx.beginPath();
-
-    let started = false;
-    for (let i=0;i<n;i++){
-      const v = clean[i];
-      if (v == null) continue;
-      const x = pad + (i/(n-1 || 1)) * innerW;
-      const norm = (v - minV) / ((maxV - minV) || 1);
-      const y = pad + (1 - norm) * innerH;
-      if (!started){ ctx.moveTo(x,y); started = true; }
-      else ctx.lineTo(x,y);
-    }
-    ctx.stroke();
-
-    for (let i=0;i<n;i++){
-      const v = clean[i];
-      if (v == null) continue;
-      const x = pad + (i/(n-1 || 1)) * innerW;
-      const norm = (v - minV) / ((maxV - minV) || 1);
-      const y = pad + (1 - norm) * innerH;
-      ctx.fillStyle = "rgba(79,124,255,1)";
-      ctx.beginPath();
-      ctx.arc(x,y, 3*dpr, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = "rgba(230,238,252,0.75)";
-    ctx.font = `${11 * dpr}px system-ui`;
-    const step = Math.ceil(n / 6);
-    for (let i=0;i<n;i+=step){
-      const text = labels[i] || "";
-      const x = pad + (i/(n-1 || 1)) * innerW;
-      ctx.fillText(text, x, pad + innerH + (18 * dpr));
-    }
-  }
-
-  function renderMonthly(){
-    const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
-    const allMonths = buildMonthlyStats(data);
-    const months = filterRange(allMonths);
-
-    renderMonthlyTable(months);
-
-    const labels = months.map(m => m.month.slice(5)); // "MM"
-    const km = months.map(m => +(m.totalMeters/1000).toFixed(2));
-    const paceVals = months.map(m => paceMinPer100m(m.totalMeters, m.totalMinutes));
-
-    drawBarChart($("chartMonthly"), labels, km);
-    drawLineChart($("chartPace"), labels, paceVals);
-
-    if (!months.length){
-      $("chartMonthlyNote").textContent = "Ajoute des sessions pour voir le graphique.";
-      $("chartPaceNote").textContent = "";
-    } else {
-      const totalKm = km.reduce((s,v)=>s+v,0);
-      $("chartMonthlyNote").textContent = `Total sur la période: ${totalKm.toFixed(2)} km`;
-      const last = months[months.length-1];
-      const lastPace = formatPace(paceMinPer100m(last.totalMeters, last.totalMinutes));
-      $("chartPaceNote").textContent = `Dernier mois (${last.month}) : allure moy. ${lastPace}`;
-    }
-  }
-
-  function forceUpdate(){
-    ACTIVE_KEY = findActiveKey();
-    $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
-    computeHistoryKpisAndRecords();
-    renderMonthly();
-    renderSessions();
-    setMsg("", "✅ Stats recalculées (historique relu).");
-  }
-
-  function renderAll(){
-    $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
-    computeHistoryKpisAndRecords();
-    renderMonthly();
-    renderSessions();
-  }
-
-  // Init
-  ACTIVE_KEY = findActiveKey();
-  $("date").value = todayISO();
-  $("poolLen").value = 25;
-  $("weightKg").value = 78;
-
-  $("addBtn").addEventListener("click", addSession);
-  $("forceBtn").addEventListener("click", forceUpdate);
-  $("clearInputsBtn").addEventListener("click", clearInputs);
-  $("exportBtn").addEventListener("click", exportJSON);
-  $("importBtn").addEventListener("click", importJSON);
-  $("wipeBtn").addEventListener("click", wipeAll);
-
-  $("sort").addEventListener("change", renderSessions);
-  $("chartRange").addEventListener("change", renderMonthly);
-
-  $("weightKg").addEventListener("input", renderAll);
-  $("intensity").addEventListener("change", renderAll);
-
-  renderAll();
-  window.addEventListener("resize", renderMonthly);
-
-// --- SW Debug: affiche la version SW active dans l'UI ---
-async function getSwVersion(){
-  if (!navigator.serviceWorker?.controller) return null;
-
-  return new Promise((resolve) => {
-    const ch = new MessageChannel();
-    ch.port1.onmessage = (e) => resolve(e.data);
-    navigator.serviceWorker.controller.postMessage(
-      { type: "GET_VERSION" },
-      [ch.port2]
-    );
-  });
-}
-
-async function refreshUiSwBadges(){
-  const swPill = document.getElementById("uiSwBuild");
-  const htmlPill = document.getElementById("uiHtmlBuild");
-  const statePill = document.getElementById("uiSwState");
-
-  // HTML build (si tu le fournis via meta / variable globale)
-  const htmlBuild = window.__BUILD__ || document.documentElement.getAttribute("data-build") || "—";
-  if (htmlPill) {
-    htmlPill.textContent = `HTML: ${htmlBuild}`;
-    htmlPill.classList.add("ok");
-  }
-
-  // SW build
-  const info = await getSwVersion();
-  if (!swPill) return;
-
-  if (!info) {
-    swPill.textContent = "SW actif: (aucun)";
-    swPill.className = "pill warn";
-    return;
-  }
-
-  swPill.textContent = `SW actif: ${info.build}`;
-  swPill.className = "pill ok";
-
-  // Compare HTML build vs SW build si dispo
-  if (htmlBuild !== "—" && info.build !== htmlBuild) {
-    swPill.className = "pill warn";
-  }
-
-  // Affiche si un update arrive
-  if (statePill) statePill.style.display = "none";
-}
-
-// Met à jour au chargement + quand le SW change
-window.addEventListener("load", () => {
-  refreshUiSwBadges();
-
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      refreshUiSwBadges();
-    });
-  }
-});
-</script>
-
-<script>
-  // ✅ Service Worker registration + auto update (indispensable iOS PWA)
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", async () => {
+    function load(){
       try {
-        const reg = await navigator.serviceWorker.register("./sw.js");
+        const raw = localStorage.getItem(ACTIVE_KEY) || "[]";
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return [];
+        return arr.map(normalizeSession);
+      } catch {
+        return [];
+      }
+    }
 
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
+    function save(data){
+      localStorage.setItem(ACTIVE_KEY, JSON.stringify(data));
+    }
 
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed") {
-              if (navigator.serviceWorker.controller) {
+    function uuid(){
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
+    }
+
+    function addSession(){
+      setMsg("", "");
+      const date = $("date").value || todayISO();
+      const poolLen = Number($("poolLen").value);
+      const laps = Number($("laps").value);
+      const minutes = Number($("minutes").value);
+      const note = ($("note").value || "").trim();
+
+      if (!poolLen || poolLen <= 0) return setMsg("👉 Indique la taille d’une longueur (en mètres).");
+      if (!Number.isFinite(laps) || laps < 0) return setMsg("👉 Le nombre de longueurs doit être ≥ 0.");
+      if (!minutes || minutes <= 0) return setMsg("👉 Indique le temps de session (en minutes).");
+
+      const totalMeters = meters(laps, poolLen);
+      const session = { id: uuid(), date, poolLen, laps, minutes, totalMeters, note };
+
+      const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
+      data.push(session);
+      save(data);
+
+      setMsg("", "✅ Session ajoutée !");
+      renderAll();
+    }
+
+    function clearInputs(){
+      $("laps").value = "";
+      $("minutes").value = "";
+      $("note").value = "";
+      setMsg("", "");
+    }
+
+    function exportJSON(){
+      const data = load();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sessions_piscine.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function importJSON(){
+      const inp = document.createElement("input");
+      inp.type = "file";
+      inp.accept = "application/json";
+      inp.onchange = async () => {
+        const file = inp.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if (!Array.isArray(parsed)) throw new Error("Format invalide (tableau attendu).");
+
+          const clean = parsed
+            .filter(x => x && typeof x === "object")
+            .map(normalizeSession)
+            .filter(s => s.poolLen > 0 && s.minutes > 0);
+
+          save(clean);
+          renderAll();
+          setMsg("", "✅ Import effectué !");
+        } catch (e){
+          setMsg("❌ Import impossible : " + (e?.message || e));
+        }
+      };
+      inp.click();
+    }
+
+    function wipeAll(){
+      if (!confirm("Tout effacer ? (irréversible)")) return;
+      localStorage.removeItem(ACTIVE_KEY);
+      renderAll();
+      setMsg("", "✅ Historique effacé.");
+    }
+
+    function sortSessions(data){
+      const mode = $("sort").value;
+      const copy = [...data].filter(s => s.poolLen > 0 && s.minutes > 0);
+      copy.sort((a,b) => {
+        if (mode === "date_desc") return (b.date||"").localeCompare(a.date||"");
+        if (mode === "date_asc") return (a.date||"").localeCompare(b.date||"");
+        if (mode === "dist_desc") return (b.totalMeters||0) - (a.totalMeters||0);
+        if (mode === "time_desc") return (b.minutes||0) - (a.minutes||0);
+        if (mode === "pace_asc") {
+          const pa = paceMinPer100m(a.totalMeters, a.minutes);
+          const pb = paceMinPer100m(b.totalMeters, b.minutes);
+          if (pa == null && pb == null) return 0;
+          if (pa == null) return 1;
+          if (pb == null) return -1;
+          return pa - pb;
+        }
+        return 0;
+      });
+      return copy;
+    }
+
+    function renderSessions(){
+      const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
+      const sorted = sortSessions(data);
+
+      const total = sorted.reduce((s,x)=>s+(x.totalMeters||0),0);
+      $("countPill").textContent = `${sorted.length} session${sorted.length>1?"s":""}`;
+      $("sumPill").textContent = `Total: ${total} m`;
+
+      const tbody = $("tbody");
+      tbody.innerHTML = "";
+
+      for (const s of sorted){
+        const pace = formatPace(paceMinPer100m(s.totalMeters, s.minutes));
+        const details = `${s.laps} longueurs · ${s.poolLen} m${s.note ? " · " + s.note : ""}`;
+        const kcal = kcalFromMinutes(s.minutes);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${s.date || "—"}</td>
+          <td title="${details.replaceAll('"','&quot;')}">${details}</td>
+          <td class="right">${s.totalMeters} m</td>
+          <td class="right">${Number(s.minutes).toFixed(1)} min</td>
+          <td class="right">${pace}</td>
+          <td class="right">${kcal ? kcal.toFixed(0) : "—"}</td>
+          <td class="right"></td>
+        `;
+
+        const btn = document.createElement("button");
+        btn.textContent = "Supprimer";
+        btn.className = "btn2";
+        btn.style.width = "auto";
+        btn.onclick = () => {
+          save(load().filter(x => x.id !== s.id));
+          renderAll();
+        };
+        tr.lastElementChild.appendChild(btn);
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    function computeHistoryKpisAndRecords(){
+      const data = load().map(normalizeSession).filter(s => s.poolLen > 0 && s.minutes > 0);
+      save(data);
+
+      const totalMeters = data.reduce((s,x)=>s+(Number(x.totalMeters)||0),0);
+      const totalMinutes = data.reduce((s,x)=>s+(Number(x.minutes)||0),0);
+
+      $("kDistance").textContent = totalMeters > 0 ? `${totalMeters} m` : "—";
+      $("kDistance2").textContent = totalMeters > 0 ? `${(totalMeters/1000).toFixed(2)} km` : "";
+
+      $("kTime").textContent = totalMinutes > 0 ? `${totalMinutes.toFixed(1)} min` : "—";
+      $("kPace").textContent = formatPace(paceMinPer100m(totalMeters, totalMinutes));
+
+      const sp = speedKmh(totalMeters, totalMinutes);
+      $("kSpeed").textContent = sp == null ? "—" : sp.toFixed(2);
+
+      const r = rateMPerMin(totalMeters, totalMinutes);
+      $("kRate").textContent = r == null ? "—" : r.toFixed(1);
+
+      const totalKcal = data.reduce((s,x)=>s + kcalFromMinutes(x.minutes), 0);
+      $("kKcal").textContent = data.length ? `${totalKcal.toFixed(0)}` : "—";
+
+      const dates = data.map(x=>x.date).filter(Boolean).sort();
+      $("kPeriod").textContent = dates.length
+        ? `Période: ${dates[0]} → ${dates[dates.length-1]} • ${data.length} sessions`
+        : "Ajoute une session pour voir les stats.";
+
+      if (!data.length){
+        $("kRecDist").textContent = "—";
+        $("kRecDist2").textContent = "";
+        $("kRecPace").textContent = "—";
+        $("kRecPace2").textContent = "";
+        return;
+      }
+
+      const bestDist = data.reduce((m,x)=> !m || x.totalMeters > m.totalMeters ? x : m, null);
+      $("kRecDist").textContent = `${bestDist.totalMeters} m`;
+      $("kRecDist2").textContent = bestDist.date ? `le ${bestDist.date}` : "";
+
+      const bestPace = data.reduce((m,x)=> {
+        const p = paceMinPer100m(x.totalMeters, x.minutes);
+        if (p == null) return m;
+        if (!m) return x;
+        const pm = paceMinPer100m(m.totalMeters, m.minutes);
+        return (pm == null || p < pm) ? x : m;
+      }, null);
+
+      if (bestPace){
+        $("kRecPace").textContent = formatPace(paceMinPer100m(bestPace.totalMeters, bestPace.minutes));
+        $("kRecPace2").textContent = bestPace.date ? `le ${bestPace.date} • ${bestPace.totalMeters} m` : "";
+      } else {
+        $("kRecPace").textContent = "—";
+        $("kRecPace2").textContent = "";
+      }
+    }
+
+    function monthKey(iso){
+      if (!iso || iso.length < 7) return "";
+      return iso.slice(0,7);
+    }
+
+    function buildMonthlyStats(data){
+      const map = new Map();
+      for (const s of data){
+        const mk = monthKey(s.date);
+        if (!mk) continue;
+
+        if (!map.has(mk)){
+          map.set(mk, { month: mk, sessions: 0, totalMeters: 0, totalMinutes: 0, kcal: 0 });
+        }
+        const agg = map.get(mk);
+        agg.sessions += 1;
+        agg.totalMeters += Number(s.totalMeters) || 0;
+        agg.totalMinutes += Number(s.minutes) || 0;
+        agg.kcal += kcalFromMinutes(s.minutes);
+      }
+      return Array.from(map.values()).sort((a,b)=> (a.month||"").localeCompare(b.month||""));
+    }
+
+    function filterRange(arr){
+      const v = $("chartRange").value;
+      if (v === "all") return arr;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n <= 0) return arr;
+      return arr.slice(Math.max(0, arr.length - n));
+    }
+
+    function renderMonthlyTable(months){
+      const tbody = $("tbodyMonths");
+      tbody.innerHTML = "";
+
+      if (!months.length){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="6" class="muted">Ajoute des sessions pour voir les stats mensuelles.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      for (const m of months){
+        const pace = formatPace(paceMinPer100m(m.totalMeters, m.totalMinutes));
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${m.month}</td>
+          <td class="right">${m.sessions}</td>
+          <td class="right">${m.totalMeters} m <span class="muted">(${(m.totalMeters/1000).toFixed(2)} km)</span></td>
+          <td class="right">${m.totalMinutes.toFixed(1)} min</td>
+          <td class="right">${pace}</td>
+          <td class="right">${m.kcal ? m.kcal.toFixed(0) : "—"}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function drawBarChart(canvas, labels, values){
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      canvas.height = Math.max(1, Math.floor(220 * dpr));
+
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+
+      const pad = 24 * dpr;
+      const innerW = W - pad*2;
+      const innerH = H - pad*2;
+
+      const maxV = Math.max(1, ...values);
+      const n = Math.max(1, values.length);
+      const gap = innerW * 0.02;
+      const barW = Math.max(2, (innerW - gap*(n-1)) / n);
+
+      ctx.strokeStyle = "rgba(230,238,252,0.15)";
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(pad, pad + innerH);
+      ctx.lineTo(pad + innerW, pad + innerH);
+      ctx.stroke();
+
+      for (let i=0;i<n;i++){
+        const v = values[i] || 0;
+        const h = (v / maxV) * innerH;
+        const x = pad + i*(barW+gap);
+        const y = pad + (innerH - h);
+        ctx.fillStyle = "rgba(79,124,255,0.85)";
+        ctx.fillRect(x, y, barW, h);
+      }
+
+      ctx.fillStyle = "rgba(230,238,252,0.75)";
+      ctx.font = `${11 * dpr}px system-ui`;
+      const step = Math.ceil(n / 6);
+      for (let i=0;i<n;i+=step){
+        const text = labels[i] || "";
+        const x = pad + i*(barW+gap);
+        ctx.fillText(text, x, pad + innerH + (18 * dpr));
+      }
+    }
+
+    function drawLineChart(canvas, labels, values){
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      canvas.height = Math.max(1, Math.floor(220 * dpr));
+
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0,0,W,H);
+
+      const pad = 24 * dpr;
+      const innerW = W - pad*2;
+      const innerH = H - pad*2;
+
+      const clean = values.map(v => (Number.isFinite(v) ? v : null));
+      const finite = clean.filter(v => v != null);
+      const maxV = finite.length ? Math.max(...finite) : 1;
+      const minV = finite.length ? Math.min(...finite) : 0;
+
+      const n = Math.max(1, values.length);
+
+      ctx.strokeStyle = "rgba(230,238,252,0.15)";
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(pad, pad + innerH);
+      ctx.lineTo(pad + innerW, pad + innerH);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(79,124,255,0.95)";
+      ctx.lineWidth = 2 * dpr;
+      ctx.beginPath();
+
+      let started = false;
+      for (let i=0;i<n;i++){
+        const v = clean[i];
+        if (v == null) continue;
+        const x = pad + (i/(n-1 || 1)) * innerW;
+        const norm = (v - minV) / ((maxV - minV) || 1);
+        const y = pad + (1 - norm) * innerH;
+        if (!started){ ctx.moveTo(x,y); started = true; }
+        else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      for (let i=0;i<n;i++){
+        const v = clean[i];
+        if (v == null) continue;
+        const x = pad + (i/(n-1 || 1)) * innerW;
+        const norm = (v - minV) / ((maxV - minV) || 1);
+        const y = pad + (1 - norm) * innerH;
+        ctx.fillStyle = "rgba(79,124,255,1)";
+        ctx.beginPath();
+        ctx.arc(x,y, 3*dpr, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "rgba(230,238,252,0.75)";
+      ctx.font = `${11 * dpr}px system-ui`;
+      const step = Math.ceil(n / 6);
+      for (let i=0;i<n;i+=step){
+        const text = labels[i] || "";
+        const x = pad + (i/(n-1 || 1)) * innerW;
+        ctx.fillText(text, x, pad + innerH + (18 * dpr));
+      }
+    }
+
+    function renderMonthly(){
+      const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
+      const allMonths = buildMonthlyStats(data);
+      const months = filterRange(allMonths);
+
+      renderMonthlyTable(months);
+
+      const labels = months.map(m => m.month.slice(5));
+      const km = months.map(m => +(m.totalMeters/1000).toFixed(2));
+      const paceVals = months.map(m => paceMinPer100m(m.totalMeters, m.totalMinutes));
+
+      drawBarChart($("chartMonthly"), labels, km);
+      drawLineChart($("chartPace"), labels, paceVals);
+
+      if (!months.length){
+        $("chartMonthlyNote").textContent = "Ajoute des sessions pour voir le graphique.";
+        $("chartPaceNote").textContent = "";
+      } else {
+        const totalKm = km.reduce((s,v)=>s+v,0);
+        $("chartMonthlyNote").textContent = `Total sur la période: ${totalKm.toFixed(2)} km`;
+        const last = months[months.length-1];
+        const lastPace = formatPace(paceMinPer100m(last.totalMeters, last.totalMinutes));
+        $("chartPaceNote").textContent = `Dernier mois (${last.month}) : allure moy. ${lastPace}`;
+      }
+    }
+
+    function forceUpdate(){
+      ACTIVE_KEY = findActiveKey();
+      $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
+      computeHistoryKpisAndRecords();
+      renderMonthly();
+      renderSessions();
+      setMsg("", "✅ Stats recalculées (historique relu).");
+      refreshUiSwBadges();
+    }
+
+    function renderAll(){
+      $("activeKeyPill").textContent = `storage: ${ACTIVE_KEY}`;
+      computeHistoryKpisAndRecords();
+      renderMonthly();
+      renderSessions();
+    }
+
+    // --- SW Debug: version SW active -> UI ---
+    async function getSwVersion(){
+      if (!navigator.serviceWorker?.controller) return null;
+
+      return new Promise((resolve) => {
+        const ch = new MessageChannel();
+        ch.port1.onmessage = (e) => resolve(e.data);
+        navigator.serviceWorker.controller.postMessage({ type: "GET_VERSION" }, [ch.port2]);
+      });
+    }
+
+    async function refreshUiSwBadges(){
+      const swPill = document.getElementById("uiSwBuild");
+      const htmlPill = document.getElementById("uiHtmlBuild");
+      const statePill = document.getElementById("uiSwState");
+
+      const htmlBuild = window.__BUILD__ || document.documentElement.getAttribute("data-build") || "—";
+
+      if (htmlPill) {
+        htmlPill.textContent = `HTML: ${htmlBuild}`;
+        htmlPill.className = "pill ok";
+      }
+
+      const info = await getSwVersion();
+      if (!swPill) return;
+
+      if (!info) {
+        swPill.textContent = "SW actif: (aucun)";
+        swPill.className = "pill warn";
+        return;
+      }
+
+      swPill.textContent = `SW actif: ${info.build}`;
+      swPill.className = "pill ok";
+
+      if (htmlBuild !== "—" && info.build && info.build !== htmlBuild) {
+        swPill.className = "pill warn";
+        if (statePill) {
+          statePill.style.display = "inline-block";
+          statePill.textContent = "SW: mismatch (reload conseillé)";
+        }
+      } else {
+        if (statePill) statePill.style.display = "none";
+      }
+    }
+
+    // Init
+    ACTIVE_KEY = findActiveKey();
+    $("date").value = todayISO();
+    $("poolLen").value = 25;
+    $("weightKg").value = 78;
+
+    $("addBtn").addEventListener("click", addSession);
+    $("forceBtn").addEventListener("click", forceUpdate);
+    $("clearInputsBtn").addEventListener("click", clearInputs);
+    $("exportBtn").addEventListener("click", exportJSON);
+    $("importBtn").addEventListener("click", importJSON);
+    $("wipeBtn").addEventListener("click", wipeAll);
+
+    $("sort").addEventListener("change", renderSessions);
+    $("chartRange").addEventListener("change", renderMonthly);
+
+    $("weightKg").addEventListener("input", () => { renderAll(); refreshUiSwBadges(); });
+    $("intensity").addEventListener("change", () => { renderAll(); refreshUiSwBadges(); });
+
+    renderAll();
+    refreshUiSwBadges();
+    window.addEventListener("resize", renderMonthly);
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        refreshUiSwBadges();
+      });
+    }
+  </script>
+
+  <!-- =========================
+       SW REGISTER + AUTO UPDATE
+  ========================== -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", async () => {
+        try {
+          const reg = await navigator.serviceWorker.register("./sw.js");
+
+          // badge "update…" quand un nouveau SW est détecté
+          reg.addEventListener("updatefound", () => {
+            const p = document.getElementById("uiSwState");
+            if (p) { p.style.display = "inline-block"; p.textContent = "SW: update…"; }
+          });
+
+          // force activation du nouveau SW
+          reg.addEventListener("updatefound", () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
                 newWorker.postMessage({ type: "SKIP_WAITING" });
               }
-            }
+            });
           });
-        });
 
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          if (refreshing) return;
-          refreshing = true;
-          window.location.reload();
-        });
+          // quand le nouveau SW prend le contrôle -> reload
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            window.location.reload();
+          });
 
-      } catch (e) {
-        console.log("SW register failed", e);
-      }
-    });
-  }
-  
-async function getSwVersion(){
-  if (!navigator.serviceWorker?.controller) return null;
-
-  return new Promise((resolve) => {
-    const ch = new MessageChannel();
-    ch.port1.onmessage = (e) => resolve(e.data);
-    navigator.serviceWorker.controller.postMessage(
-      { type: "GET_VERSION" },
-      [ch.port2]
-    );
-  });
-}
-
-getSwVersion().then(v => console.log("SW ACTIF:", v));
-
-</script>
-
+        } catch (e) {
+          console.log("SW register failed", e);
+        }
+      });
+    }
+  </script>
 </body>
 </html>
