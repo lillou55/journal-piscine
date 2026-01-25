@@ -97,6 +97,39 @@
       <div class="pill" id="uiSwBuild">SW actif: —</div>
       <div class="pill muted" id="uiSwState" style="display:none;">SW: update…</div>
     </div>
+	
+	<div class="card" style="margin-top:10px;">
+		<div class="inline">
+			<div class="pill" id="authState">Compte: —</div>
+			<div style="flex:1"></div>
+			<button class="btn2" id="btnCloudReload" type="button">Recharger depuis le cloud</button>
+			<button class="btn2" id="btnCloudPush" type="button">Envoyer le local → cloud</button>
+		</div>
+
+
+		<div class="grid" style="margin-top:10px;">
+			<div class="col-6">
+				<label for="authEmail">Email</label>
+				<input id="authEmail" type="email" placeholder="toi@email.com" />
+			</div>
+			<div class="col-6">
+				<label for="authPass">Mot de passe</label>
+				<input id="authPass" type="password" placeholder="••••••••" />
+			</div>
+
+
+			<div class="col-12 row">
+				<button class="btn" id="btnSignUp" type="button">Créer un compte</button>
+				<button class="btn" id="btnSignIn" type="button">Se connecter</button>
+				<button class="danger" id="btnSignOut" type="button">Se déconnecter</button>
+			</div>
+
+
+			<div class="muted" style="font-size:12px;">
+				Une fois connecté, tes sessions sont sauvegardées dans Supabase (accessible sur tous tes appareils).
+			</div>
+		</div>
+	</div>
 
     <!-- FORM + HISTO KPIS -->
     <div class="card">
@@ -302,11 +335,90 @@
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- =========================
        SCRIPT PRINCIPAL APP
   ========================== -->
   <script>
     const $ = (id) => document.getElementById(id);
+	
+	// =========================
+	// SUPABASE INIT + AUTH
+	// =========================
+	const SUPABASE_URL = "TON_PROJECT_URL";
+	const SUPABASE_ANON_KEY = "TON_ANON_KEY";
+
+
+	// supabase-js v2 (CDN) expose un global `supabase`
+	const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+	const authState = $("authState");
+	const authEmail = $("authEmail");
+	const authPass = $("authPass");
+	const btnSignUp = $("btnSignUp");
+	const btnSignIn = $("btnSignIn");
+	const btnSignOut = $("btnSignOut");
+	const btnCloudReload = $("btnCloudReload");
+	const btnCloudPush = $("btnCloudPush");
+
+
+	async function signUp(){
+	const email = (authEmail?.value || "").trim();
+	const password = (authPass?.value || "").trim();
+	if (!email || !password) return alert("Email + mot de passe requis.");
+
+
+	const { error } = await sb.auth.signUp({ email, password });
+	if (error) return alert(error.message);
+
+
+	alert("Compte créé ! Vérifie tes emails si Supabase demande une confirmation.");
+	}
+
+
+	async function signIn(){
+		const email = (authEmail?.value || "").trim();
+		const password = (authPass?.value || "").trim();
+		if (!email || !password) return alert("Email + mot de passe requis.");
+
+
+		const { error } = await sb.auth.signInWithPassword({ email, password });
+		if (error) return alert(error.message);
+	}
+
+
+	async function signOut(){
+		const { error } = await sb.auth.signOut();
+		if (error) alert(error.message);
+	}
+
+
+	// état au chargement
+	(async () => {
+		const { data } = await sb.auth.getSession();
+		const user = data?.session?.user;
+		authState.textContent = user ? `Compte: ${user.email}` : "Compte: —";
+	})();
+
+
+	// écoute en live
+	sb.auth.onAuthStateChange((_event, session) => {
+		authState.textContent = session?.user ? `Compte: ${session.user.email}` : "Compte: —";
+	});
+
+
+	// boutons
+	if (btnSignUp) btnSignUp.onclick = signUp;
+	if (btnSignIn) btnSignIn.onclick = signIn;
+	if (btnSignOut) btnSignOut.onclick = signOut;
+
+
+	// Pour l’instant : on évite les erreurs si tu cliques.
+	// On branchera vraiment la synchro cloud juste après.
+	if (btnCloudReload) btnCloudReload.onclick = () => alert("Étape suivante : lecture Supabase (cloud → local).");
+	if (btnCloudPush) btnCloudPush.onclick = () => alert("Étape suivante : upload Supabase (local → cloud).");
+	
 
     // ✅ support migration / anciennes versions
     const STORAGE_KEYS = ["swim_sessions_v1", "swim_sessions", "sessions_piscine"];
