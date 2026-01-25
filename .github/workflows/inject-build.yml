@@ -3,7 +3,6 @@ name: Inject build id
 on:
   push:
     branches: [ "main" ]
-    # On ne déclenche l'action que si index.html ou sw.js sont modifiés manuellement
     paths:
       - 'index.html'
       - 'sw.js'
@@ -13,7 +12,6 @@ permissions:
 
 jobs:
   inject:
-    # Sécurité supplémentaire pour ne pas tourner en boucle
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -23,23 +21,21 @@ jobs:
 
       - name: Inject build id
         run: |
-          # Récupération du hash court du commit
+          # Récupère le hash court
           BUILD_ID=$(git rev-parse --short HEAD)
-          echo "Injection du build : $BUILD_ID"
-          
-          # Remplacement de __BUILD__ par le hash dans les deux fichiers
+          # Remplace __BUILD__ dans les deux fichiers
           sed -i "s/__BUILD__/${BUILD_ID}/g" index.html sw.js
 
-      - name: Commit and Push changes
+      - name: Commit and Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html sw.js
           
-          # Commit seulement s'il y a des changements
           if git diff --staged --quiet; then
-            echo "Aucun changement à commit."
+            echo "Pas de changement."
           else
-            git commit -m "chore: inject build $BUILD_ID [skip ci]"
+            # [skip ci] empêche GitHub Pages de se lancer sur CE commit intermédiaire
+            git commit -m "chore: inject build ${BUILD_ID} [skip ci]"
             git push
           fi
