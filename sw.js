@@ -1,8 +1,7 @@
 /* sw.js */
-//const CACHE_VERSION = "v8"; // 🔁 incrémentable si besoin
-const CACHE_VERSION = "b00b505";
+const CACHE_VERSION = "__BUILD__"; 
 const CACHE_NAME = `journal-piscine-${CACHE_VERSION}`;
-const BUILD_ID = CACHE_VERSION; // pour le debug
+const BUILD_ID = CACHE_VERSION; // 👈 INDISPENSABLE pour que le badge fonctionne
 
 const ASSETS = [
   "./",
