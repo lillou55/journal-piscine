@@ -1,6 +1,6 @@
 /* sw.js */
 //const CACHE_VERSION = "v8"; // 🔁 incrémentable si besoin
-const CACHE_VERSION = "c01543b";
+const CACHE_VERSION = "__BUILD__";
 const CACHE_NAME = `journal-piscine-${CACHE_VERSION}`;
 
 const ASSETS = [
