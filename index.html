@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Journal Piscine</title>
-  <link rel="icon" href="data:,">
 
 
   <!-- PWA / iPhone -->
@@ -336,7 +335,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- =========================
        SCRIPT PRINCIPAL APP
   ========================== -->
@@ -344,17 +343,25 @@
     const $ = (id) => document.getElementById(id);
 	
 	// =========================
-	// SUPABASE INIT + AUTH
-	// =========================
-	const SUPABASE_URL = "https://arvmhuherwlizehvhptk.supabase.co";
-	const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFydm1odWhlcndsaXplaHZocHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNzEzMjUsImV4cCI6MjA4NDk0NzMyNX0.MUVbwIMw9F0nhH1ZDjGfoPjNUDfweoL3oCEd-cuZJ4w";
+// SUPABASE INIT + AUTH
+// =========================
+const SUPABASE_URL = "https://arvmhuherwlizehvhptk.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFydm1odWhlcndsaXplaHZocHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNzEzMjUsImV4cCI6MjA4NDk0NzMyNX0.MUVbwIMw9F0nhH1ZDjGfoPjNUDfweoL3oCEd-cuZJ4w";
 
-
-	// supabase-js v2 (CDN) expose un global `supabase`
-	const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-
-	const authState = $("authState");
+// supabase-js v2 (CDN) expose un global `supabase`
+// ⚠️ Important: on encapsule l'init pour ne pas casser toute l'app si Supabase est mal configuré.
+let sb = null;
+try {
+  const u = (SUPABASE_URL || "").trim();
+  const k = (SUPABASE_ANON_KEY || "").trim();
+  if (!/^https?:\/\//i.test(u)) throw new Error("SUPABASE_URL doit commencer par http(s)://");
+  if (!k) throw new Error("SUPABASE_ANON_KEY manquante");
+  sb = supabase.createClient(u, k);
+} catch (e) {
+  console.warn("Supabase init failed:", e);
+  sb = null;
+}
+const authState = $("authState");
 	const authEmail = $("authEmail");
 	const authPass = $("authPass");
 	const btnSignUp = $("btnSignUp");
@@ -364,7 +371,17 @@
 	const btnCloudPush = $("btnCloudPush");
 
 
-	async function signUp(){
+	
+
+function requireSupabase(){
+  if (!sb) {
+    alert("Supabase n’est pas initialisé (vérifie SUPABASE_URL / ANON KEY et le chargement du CDN).");
+    return false;
+  }
+  return true;
+}
+async function signUp(){
+  if (!requireSupabase()) return;
 	const email = (authEmail?.value || "").trim();
 	const password = (authPass?.value || "").trim();
 	if (!email || !password) return alert("Email + mot de passe requis.");
@@ -379,6 +396,7 @@
 
 
 	async function signIn(){
+  if (!requireSupabase()) return;
 		const email = (authEmail?.value || "").trim();
 		const password = (authPass?.value || "").trim();
 		if (!email || !password) return alert("Email + mot de passe requis.");
@@ -390,6 +408,7 @@
 
 
 	async function signOut(){
+  if (!requireSupabase()) return;
 		const { error } = await sb.auth.signOut();
 		if (error) alert(error.message);
 	}
@@ -400,16 +419,12 @@
 		const { data } = await sb.auth.getSession();
 		const user = data?.session?.user;
 		authState.textContent = user ? `Compte: ${user.email}` : "Compte: —";
-		if (btnCloudReload) btnCloudReload.disabled = !user;
-		if (btnCloudPush) btnCloudPush.disabled = !user;
 	})();
 
 
 	// écoute en live
 	sb.auth.onAuthStateChange((_event, session) => {
 		authState.textContent = session?.user ? `Compte: ${session.user.email}` : "Compte: —";
-		if (btnCloudReload) btnCloudReload.disabled = !session?.user;
-		if (btnCloudPush) btnCloudPush.disabled = !session?.user;
 	});
 
 
@@ -419,108 +434,10 @@
 	if (btnSignOut) btnSignOut.onclick = signOut;
 
 
-	// =========================
-// CLOUD SYNC (Supabase)
-// =========================
-// Table Supabase: public.swim_sessions
-// Colonnes attendues: id (uuid), user_id (uuid), date (date), pool_len (int4),
-// laps (int4), minutes (numeric), total_meters (int4), note (text)
-
-function isUuid(v){
-  return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
-}
-function newUuid(){
-  // crypto.randomUUID() est supporté par tous les navigateurs modernes.
-  // fallback très rare (anciens navigateurs)
-  return (crypto?.randomUUID?.() || (Math.random().toString(16).slice(2) + Date.now().toString(16)));
-}
-
-async function currentUser(){
-  const { data, error } = await sb.auth.getSession();
-  if (error) throw error;
-  return data?.session?.user || null;
-}
-
-function toDbRow(s, userId){
-  return {
-    id: s.id,
-    user_id: userId,
-    date: s.date || null,
-    pool_len: Number(s.poolLen) || 0,
-    laps: Number(s.laps) || 0,
-    minutes: Number(s.minutes) || 0,
-    total_meters: Number(s.totalMeters) || 0,
-    note: (s.note || "").toString()
-  };
-}
-function fromDbRow(r){
-  return normalizeSession({
-    id: r.id,
-    date: r.date,
-    poolLen: r.pool_len,
-    laps: r.laps,
-    minutes: r.minutes,
-    totalMeters: r.total_meters,
-    note: r.note
-  });
-}
-
-async function cloudPull({ replaceLocal = true } = {}){
-  const user = await currentUser();
-  if (!user) return alert("Connecte-toi d’abord.");
-  
-  const { data, error } = await sb
-    .from("swim_sessions")
-    .select("id,user_id,date,pool_len,laps,minutes,total_meters,note,created_at,updated_at")
-    .eq("user_id", user.id)
-    .order("date", { ascending: true });
-
-  if (error) return alert("Erreur cloud: " + error.message);
-
-  const sessions = (data || []).map(fromDbRow).filter(s => s.poolLen > 0 && s.minutes > 0);
-
-  if (replaceLocal){
-    save(sessions);
-  } else {
-    // merge (garde le local + ajoute/écrase par id)
-    const local = load();
-    const map = new Map(local.map(s => [s.id, s]));
-    for (const s of sessions) map.set(s.id, s);
-    save(Array.from(map.values()));
-  }
-
-  renderAll();
-  alert(`✅ Cloud → local : ${sessions.length} session(s) chargée(s).`);
-}
-
-async function cloudUpsertMany(sessions){
-  const user = await currentUser();
-  if (!user) return alert("Connecte-toi d’abord.");
-
-  const rows = sessions.map(s => toDbRow(s, user.id));
-
-  const { error } = await sb
-    .from("swim_sessions")
-    .upsert(rows, { onConflict: "id" });
-
-  if (error) return alert("Erreur cloud: " + error.message);
-}
-
-async function cloudPushAll(){
-  const user = await currentUser();
-  if (!user) return alert("Connecte-toi d’abord.");
-  
-  const sessions = load().map(normalizeSession).filter(s => s.poolLen > 0 && s.minutes > 0);
-  if (!sessions.length) return alert("Rien à envoyer (local vide).");
-
-  await cloudUpsertMany(sessions);
-  alert(`✅ Local → cloud : ${sessions.length} session(s) envoyée(s).`);
-}
-
-// Branche les boutons cloud
-if (btnCloudReload) btnCloudReload.onclick = () => cloudPull({ replaceLocal: true });
-if (btnCloudPush) btnCloudPush.onclick = () => cloudPushAll();
-
+	// Pour l’instant : on évite les erreurs si tu cliques.
+	// On branchera vraiment la synchro cloud juste après.
+	if (btnCloudReload) btnCloudReload.onclick = () => alert("Étape suivante : lecture Supabase (cloud → local).");
+	if (btnCloudPush) btnCloudPush.onclick = () => alert("Étape suivante : upload Supabase (local → cloud).");
 	
 
     // ✅ support migration / anciennes versions
@@ -603,7 +520,7 @@ if (btnCloudPush) btnCloudPush.onclick = () => cloudPushAll();
       const totalMeters = (Number.isFinite(tm) && tm > 0) ? tm : meters(laps, poolLen);
 
       return {
-        id: (x.id && isUuid(x.id)) ? x.id : newUuid(),
+        id: x.id || (Math.random().toString(16).slice(2) + Date.now().toString(16)),
         date: (x.date || "").toString(),
         poolLen,
         laps,
@@ -629,10 +546,10 @@ if (btnCloudPush) btnCloudPush.onclick = () => cloudPushAll();
     }
 
     function uuid(){
-      return newUuid();
+      return Math.random().toString(16).slice(2) + Date.now().toString(16);
     }
 
-    async function addSession(){
+    function addSession(){
       setMsg("", "");
       const date = $("date").value || todayISO();
       const poolLen = Number($("poolLen").value);
@@ -650,14 +567,6 @@ if (btnCloudPush) btnCloudPush.onclick = () => cloudPushAll();
       const data = load().filter(s => s.poolLen > 0 && s.minutes > 0);
       data.push(session);
       save(data);
-
-      // 🔁 Auto-sync: si connecté, on envoie cette session au cloud
-      try {
-        const user = await currentUser();
-        if (user) await cloudUpsertMany([session]);
-      } catch (e) {
-        console.log('Cloud sync (add) failed', e);
-      }
 
       setMsg("", "✅ Session ajoutée !");
       renderAll();
