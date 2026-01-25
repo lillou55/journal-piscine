@@ -3,7 +3,7 @@ name: Inject build id
 on:
   push:
     branches: [ "main" ]
-    # Ne se déclenche que si vous modifiez le code, pas quand l'action elle-même commit
+    # L'action ne se déclenche pas si vous ne modifiez que les workflows
     paths-ignore:
       - '.github/workflows/**'
 
@@ -12,31 +12,38 @@ permissions:
 
 jobs:
   inject:
-    # IMPORTANT : Ne pas s'exécuter si le commit vient de l'action elle-même
+    # Sécurité : on ne lance pas l'action si le commit vient du robot lui-même
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Inject build id
+      - name: Inject build id in multiple files
         run: |
+          # 1. Récupération du hash court du commit actuel
           BUILD_ID=$(git rev-parse --short HEAD)
           echo "Injection du build : $BUILD_ID"
-          # On remplace le texte statique par le nouveau build
-          # On cible précisément les balises pour éviter de casser le JS
-          sed -i "s/__BUILD__/${BUILD_ID}/g" index.html sw.js
+          
+          # 2. Remplacement de __BUILD__ par l'ID réel dans les fichiers préparés
+          sed -i "s/__BUILD__/${BUILD_ID}/g" index.html
+          sed -i "s/__BUILD__/${BUILD_ID}/g" sw.js
 
-      - name: Commit and Push
+      - name: Commit and Push changes (Single Commit)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Ajout des deux fichiers modifiés
           git add index.html sw.js
+          
+          # On ne commit que s'il y a des changements réels
           if git diff --staged --quiet; then
-            echo "Rien à modifier"
+            echo "Aucune modification à effectuer."
           else
-            # [skip ci] est vital pour éviter la boucle infinie
-            git commit -m "chore: build ${BUILD_ID} [skip ci]"
+            # Le [skip ci] évite de redéclencher cette action en boucle
+            git commit -m "chore: build injection ${BUILD_ID} [skip ci]"
             git push
           fi
