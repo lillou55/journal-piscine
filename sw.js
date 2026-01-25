@@ -1,6 +1,6 @@
 /* sw.js */
 //const CACHE_VERSION = "v8"; // 🔁 incrémentable si besoin
-const CACHE_VERSION = "__BUILD__"; // <--- GitHub Action remplacera ceci
+const CACHE_VERSION = "22abdf4"; // <--- GitHub Action remplacera ceci
 const CACHE_NAME = `journal-piscine-${CACHE_VERSION}`;
 const BUILD_ID = CACHE_VERSION; // pour debug
 
