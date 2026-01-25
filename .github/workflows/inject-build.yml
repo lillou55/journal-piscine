@@ -3,15 +3,17 @@ name: Inject build id
 on:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - '.github/workflows/**' # Évite de boucler si on modifie le workflow
+    # On ne déclenche l'action que si index.html ou sw.js sont modifiés manuellement
+    paths:
+      - 'index.html'
+      - 'sw.js'
 
 permissions:
   contents: write
 
 jobs:
   inject:
-    # On vérifie que le commit ne vient pas de l'action elle-même pour éviter une boucle infinie
+    # Sécurité supplémentaire pour ne pas tourner en boucle
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -19,25 +21,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Inject build id into files
+      - name: Inject build id
         run: |
-          # 1. On récupère le hash court
+          # Récupération du hash court du commit
           BUILD_ID=$(git rev-parse --short HEAD)
-          echo "Nouveau Build ID: $BUILD_ID"
+          echo "Injection du build : $BUILD_ID"
           
-          # 2. On remplace __BUILD__ par le hash dans index.html et sw.js
+          # Remplacement de __BUILD__ par le hash dans les deux fichiers
           sed -i "s/__BUILD__/${BUILD_ID}/g" index.html sw.js
 
-      - name: Commit and Push
+      - name: Commit and Push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html sw.js
           
-          # On ne commit que s'il y a un changement réel
+          # Commit seulement s'il y a des changements
           if git diff --staged --quiet; then
-            echo "Aucune modification à commit."
+            echo "Aucun changement à commit."
           else
-            git commit -m "chore: build injection [skip ci]"
+            git commit -m "chore: inject build $BUILD_ID [skip ci]"
             git push
           fi
