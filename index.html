@@ -88,10 +88,9 @@
     <!--<div class="pill" id="uiBuildPill" style="margin-bottom:10px;">Version: a6e6a11</div> -->
 	<div class="pill" id="uiBuildPill" style="margin-bottom:10px;">Version: 6f3b7b7</div>
     <script>
-     //window.a6e6a11 = "a6e6a11";
-     // document.documentElement.setAttribute("data-build", window.a6e6a11);
-	  window.6f3b7b7 = "6f3b7b7"; 
-      document.documentElement.setAttribute("data-build", window.6f3b7b7);
+     // On utilise des guillemets pour que __BUILD__ devienne une string après injection
+ 	 window.buildId = "__BUILD__"; 
+  	 document.documentElement.setAttribute("data-build", window.buildId);
     </script>
 
     <!-- Badges live HTML/SW -->
