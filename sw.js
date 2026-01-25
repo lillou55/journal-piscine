@@ -1,5 +1,5 @@
 /* sw.js */
-const CACHE_VERSION = "__BUILD__"; 
+const CACHE_VERSION = "0dca692"; 
 const CACHE_NAME = `journal-piscine-${CACHE_VERSION}`;
 const BUILD_ID = CACHE_VERSION; // 👈 INDISPENSABLE pour que le badge fonctionne
 
