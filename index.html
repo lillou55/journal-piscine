@@ -381,19 +381,51 @@ function requireSupabase(){
   return true;
 }
 async function signUp(){
-  if (!requireSupabase()) return;
+  <!-- if (!requireSupabase()) return; -->
+	<!-- const email = (authEmail?.value || "").trim(); -->
+	<!-- const password = (authPass?.value || "").trim(); -->
+	<!-- if (!email || !password) return alert("Email + mot de passe requis."); -->
+
+
+	<!-- const { error } = await sb.auth.signUp({ email, password }); -->
+	<!-- if (error) return alert(error.message); -->
+
+
+	<!-- alert("Compte créé ! Vérifie tes emails si Supabase demande une confirmation."); -->
 	const email = (authEmail?.value || "").trim();
 	const password = (authPass?.value || "").trim();
 	if (!email || !password) return alert("Email + mot de passe requis.");
 
 
-	const { error } = await sb.auth.signUp({ email, password });
+	const redirectTo = new URL("./", window.location.href).href; // -> .../journal-piscine/
+
+
+	const { error } = await sb.auth.signUp({
+	email,
+	password,
+	options: { emailRedirectTo: redirectTo }
+	});
+
+
 	if (error) return alert(error.message);
-
-
-	alert("Compte créé ! Vérifie tes emails si Supabase demande une confirmation.");
+	alert("Compte créé ! Vérifie tes emails.");
 	}
 
+	(async () => {
+		// Si Supabase renvoie ?code=... après validation
+		const url = new URL(window.location.href);
+		if (url.searchParams.get("code")) {
+			await sb.auth.exchangeCodeForSession(window.location.href);
+			// Nettoie l'URL (optionnel)
+			url.searchParams.delete("code");
+			window.history.replaceState({}, document.title, url.toString());
+		}
+
+
+		const { data } = await sb.auth.getSession();
+		const user = data?.session?.user;
+		authState.textContent = user ? `Compte: ${user.email}` : "Compte: —";
+	})();
 
 	async function signIn(){
   if (!requireSupabase()) return;
