@@ -3,15 +3,16 @@ name: Inject build id
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - 'index.html'
-      - 'sw.js'
+    # Ne se déclenche que si vous modifiez le code, pas quand l'action elle-même commit
+    paths-ignore:
+      - '.github/workflows/**'
 
 permissions:
   contents: write
 
 jobs:
   inject:
+    # IMPORTANT : Ne pas s'exécuter si le commit vient de l'action elle-même
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -21,9 +22,10 @@ jobs:
 
       - name: Inject build id
         run: |
-          # Récupère le hash court
           BUILD_ID=$(git rev-parse --short HEAD)
-          # Remplace __BUILD__ dans les deux fichiers
+          echo "Injection du build : $BUILD_ID"
+          # On remplace le texte statique par le nouveau build
+          # On cible précisément les balises pour éviter de casser le JS
           sed -i "s/__BUILD__/${BUILD_ID}/g" index.html sw.js
 
       - name: Commit and Push
@@ -31,11 +33,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html sw.js
-          
           if git diff --staged --quiet; then
-            echo "Pas de changement."
+            echo "Rien à modifier"
           else
-            # [skip ci] empêche GitHub Pages de se lancer sur CE commit intermédiaire
-            git commit -m "chore: inject build ${BUILD_ID} [skip ci]"
+            # [skip ci] est vital pour éviter la boucle infinie
+            git commit -m "chore: build ${BUILD_ID} [skip ci]"
             git push
           fi
